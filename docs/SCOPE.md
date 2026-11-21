@@ -33,7 +33,7 @@ Reference copy read 20 Nov: WowInterface file 4795, `WhisperCast3.2.3.zip`.
 
 Drawings in `tools/look-board/index.html` (section id = item); picks in the board's db collection `picks`.
 His notes in quotes.
-- Name: **WhisperCast: Second Wind** (folder `WhisperCastSecondWind`, slash `/wc`).
+- Name: **WhisperCast: Second Wind** (folder `WhisperCast` since 21 Nov, "I also want the addon folder to just be called whispercast"; slash `/wc`).
 - Overall look: no single pick: "All three. We should also have custom adjusters for all colors and opacity etc."
   So Blizzard classic, Suite dark and Flat modern are selectable looks, with colour and opacity settings.
 - Queue window: Next up, big: "Next Up Big + Grouped by spell option (Enabled by default)".

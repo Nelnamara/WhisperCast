@@ -20,7 +20,7 @@ WCSW.UI = UI
 
 WCSW.LOGO = WCSW.LOGO or "Interface\\Icons\\Spell_Holy_WordFortitude"   -- the addon list icon (Identity)
 WCSW.UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
-UI.MEDIA = "Interface\\AddOns\\" .. (WCSW.ADDON_NAME or "WhisperCastSecondWind") .. "\\Media\\"
+UI.MEDIA = "Interface\\AddOns\\" .. (WCSW.ADDON_NAME or "WhisperCast") .. "\\Media\\"
 UI.WHITE = "Interface\\Buttons\\WHITE8X8"
 
 local function hex(h, a)

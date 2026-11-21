@@ -7,7 +7,7 @@ for the owner, not a builder's call.
 
 ## Identity
 - Title "WhisperCast: Second Wind" (TOC `## Title: |cFFFF80FFWhisperCast|r: Second Wind`). Folder and TOC base
-  `WhisperCastSecondWind`. AceAddon and global object `WhisperCastSW`; saved variables `WhisperCastSWDB`.
+  `WhisperCast` (the owner, 21 Nov: the folder is just WhisperCast; it was `WhisperCastSecondWind`). AceAddon and global object `WhisperCastSW`; saved variables `WhisperCastSWDB`.
 - Slash `/wc` and `/whispercast`. Reply prefix `[WC]`. Addon message prefix `WCSW`.
 - Accent: whisper pink `#ff80ff` (1, 0.5, 1). Everything pink below means the accent colour setting.
 - Addon list icon: a game icon (`Interface\Icons\Spell_Holy_WordFortitude`) until the owner picks art.

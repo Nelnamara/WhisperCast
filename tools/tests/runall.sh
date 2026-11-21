@@ -13,7 +13,7 @@ run() {
 		echo "$out" | tail -n 3 | sed 's/^/  FAIL /'
 	fi
 }
-CLIENTS="11509:WhisperCastSecondWind_Vanilla.toc 20506:WhisperCastSecondWind_TBC.toc 50504:WhisperCastSecondWind_Mists.toc 120105:WhisperCastSecondWind_Mainline.toc 16001:WhisperCastSecondWind_Camelot.toc 16001:WhisperCastSecondWind.toc"
+CLIENTS="11509:WhisperCast_Vanilla.toc 20506:WhisperCast_TBC.toc 50504:WhisperCast_Mists.toc 120105:WhisperCast_Mainline.toc 16001:WhisperCast_Camelot.toc 16001:WhisperCast.toc"
 for h in smoke engine ui options; do
 	[ -f "$T/$h.lua" ] || continue
 	for c in $CLIENTS; do run "${c%%:*}" "$T/$h.lua" "${c#*:}"; done

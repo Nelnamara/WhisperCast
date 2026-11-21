@@ -1,4 +1,4 @@
-package-as: WhisperCastSecondWind
+package-as: WhisperCast
 
 ignore:
   - .pkgmeta

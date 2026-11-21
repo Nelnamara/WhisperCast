@@ -82,7 +82,7 @@ securecall = function(f, ...)
 	return securecallfunction(f, ...)
 end
 function securecallmethod(obj, m, ...) return securecallfunction(obj[m], obj, ...) end
-function issecurevariable() return false, "WhisperCastSecondWind" end
+function issecurevariable() return false, "WhisperCast" end
 function issecure() return false end
 function InCombatLockdown() return false end
 function debugstack() return "" end
@@ -713,7 +713,7 @@ end
 C_Engraving = (FLAVOR == "era") and { IsEngravingEnabled = function() return false end } or nil
 
 ---------------------------------------------------------------- loader
-local ADDON = "WhisperCastSecondWind"
+local ADDON = "WhisperCast"
 ADDON_NS = {}
 local SRC = HARNESS_SRC
 LOADED_FILES = {}

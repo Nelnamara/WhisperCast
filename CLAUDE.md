@@ -13,7 +13,7 @@ key casts it. Standalone; CooldownCollaborator shows its queue on an Asks tab (C
   armed request cast once in combat) · Window · Toast (note + sounds) · Folded · Minimap · EditMode · Chips
   (AceGUI `WCSW_Chips`) · Options.
 - Tests: `bash tools/tests/runall.sh` (smoke, engine, ui, options on all six TOCs; fengari from cdtl3-dev).
-  LuaLS: `cd ../cdtl3-dev && LUALS=/opt/homebrew/bin/lua-language-server WOW_API_ANNOTATIONS=$HOME/.local/wow-api-annotations python3 tools/luals-check/run.py ../WhisperCastSecondWind` — keep 0 warnings.
-- Deploy to Forever: rsync to `/Applications/World of Warcraft/_forever_/Interface/AddOns/WhisperCastSecondWind`
+  LuaLS: `cd ../cdtl3-dev && LUALS=/opt/homebrew/bin/lua-language-server WOW_API_ANNOTATIONS=$HOME/.local/wow-api-annotations python3 tools/luals-check/run.py ../WhisperCast` — keep 0 warnings.
+- Deploy to Forever: rsync to `/Applications/World of Warcraft/_forever_/Interface/AddOns/WhisperCast`
   excluding .git, docs, tools, CLAUDE.md, README.md, .pkgmeta, .gitignore.
 - Commits as Nelnamara <gwilkins@local>, no Co-Authored-By trailer. Local repo only (no GitHub repo yet).
