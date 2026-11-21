@@ -767,6 +767,39 @@ else
 	check("'freedom' queues the freedom spell", queueKeys() == "Alice:freedom", queueKeys())
 end
 
+---------------------------------------------------------------- WoW: Forever surnames (seen in game 20 Nov 2026)
+do
+	local word = WCSW.hasRanks and "kings" or "freedom"
+	clearAll()
+	whisper(word, "Alice Nyx")
+	check("surname sender \"Alice Nyx\" queues as Alice", queueKeys():match("^Alice:") ~= nil, queueKeys())
+	check("its reply goes to \"Alice\", not the surname", SENT[#SENT] and SENT[#SENT].target == "Alice", SENT[#SENT] and SENT[#SENT].target)
+	clearAll()
+	whisper(word, "Alice Nyx-Faraway")
+	check("surname + realm \"Alice Nyx-Faraway\" still finds Alice in the group", queueKeys():match("^Alice:") ~= nil, queueKeys())
+	clearAll()
+	local me = UnitName("player")
+	whisper(word, me .. " Stormrider")
+	local r = WCSW.queue[1]
+	check("my own whisper with my surname queues on me (unit player)", r and r.unit == "player", r and r.unit)
+	check("IsRequestWhisper accepts a surname sender (chat filter)", WCSW:IsRequestWhisper(word, "Alice Nyx") == true)
+	-- /wc debug and /wc test
+	clearAll()
+	WCSW.db.global.debug = true
+	local before = #CHAT
+	WCSW.slash.test(word)
+	local saw = false
+	for i = before + 1, #CHAT do if tostring(CHAT[i]):find("WC debug", 1, true) and tostring(CHAT[i]):find("queued", 1, true) then saw = true end end
+	check("/wc test queues on me and /wc debug prints the steps", WCSW.queue[1] and WCSW.queue[1].unit == "player" and saw)
+	before = #CHAT
+	whisper("hello there", "Bob Nyx")
+	saw = false
+	for i = before + 1, #CHAT do if tostring(CHAT[i]):find("no word matched", 1, true) then saw = true end end
+	check("/wc debug says why chatter isn't a request", saw)
+	WCSW.db.global.debug = false
+	clearAll()
+end
+
 ---------------------------------------------------------------- end
 for _, e in ipairs(ERRORS) do print("  FAIL lua error: " .. tostring(e):sub(1, 400)) end
 print(string.format("RESULT %s engine: total lua errors %d", HARNESS_TOCFILE, #ERRORS + FAILS))

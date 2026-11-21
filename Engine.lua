@@ -295,6 +295,28 @@ local function canon(name)
 end
 WCSW.CanonName = function(_, name) return canon(name) end
 
+-- A whisper's sender as the name the game's unit calls use. WoW: Forever puts a surname in chat senders
+-- ("Devilin Nyx", "Devilin Nyx-Realm") while UnitName gives "Devilin" (CooldownCollaborator hit the same
+-- on 19 Nov 2026), so the name is the word before the first space; a realm stays.
+function WCSW:NormalizeSender(sender)
+	if type(sender) ~= "string" or sender == "" then return nil end
+	local first = sender:match("^(%S+)") or sender
+	local name, realm = first:match("^([^%-]+)%-(.+)$")
+	if not name then
+		name = first
+		realm = sender:match("%-([^%s%-]+)$")
+	end
+	if realm and realm ~= "" then return name .. "-" .. realm end
+	return name
+end
+
+-- /wc debug: every step of a whisper in chat (kept across reloads until turned off)
+function WCSW:Debug(fmt, ...)
+	if not (self.db and self.db.global and self.db.global.debug) then return end
+	local ok, line = pcall(string.format, fmt, ...)
+	DEFAULT_CHAT_FRAME:AddMessage("|cFFFF80FFWC debug|r " .. tostring(ok and line or fmt))
+end
+
 local function unitFullName(unit)
 	local ok, n, r = pcall(UnitName, unit)
 	if not ok or not plain(n) then return nil end
@@ -341,6 +363,10 @@ function WCSW:FindUnit(name)
 	end
 	local me = unitFullName("player")
 	if me and canon(me) == c then return "player", 1 end
+	-- "Name-Realm" where the roster has no realm for them (or another spelling of it): a group member
+	-- with that name wins, as CooldownCollaborator does
+	local bare = name:match("^([^%-]+)%-")
+	if bare then return self:FindUnit(bare) end
 	return nil
 end
 
@@ -365,7 +391,8 @@ end
 -- a reply whisper: "[WC] " + text, only when replies are on
 function WCSW:Reply(name, text)
 	if not (self.db and self.db.profile.replies) or not name then return end
-	sendChat(self.REPLY_TAG .. " " .. text, "WHISPER", name)
+	local sent = sendChat(self.REPLY_TAG .. " " .. text, "WHISPER", name)
+	self:Debug("  reply to %s %s: %s", name, sent and "sent" or "NOT sent (chat locked or no send call)", text)
 end
 
 -- 1st, 2nd, 3rd, 4th, 11th, 21st...
@@ -613,6 +640,7 @@ end
 -- the Cast button calls this from PreClick, so the success or failure that follows is matched to it
 -- Each press whispers "coming now" to everyone the cast answers (the armed press once per fight).
 function WCSW:CastClicked(cast)
+	self:Debug("Cast pressed: %s on %s", tostring(cast and cast.castID), tostring(cast and cast.unit))
 	if type(cast) ~= "table" or not cast.reqs then return end
 	pending = { cast = cast, time = GetTime() }
 	if inCombat and armedCast and cast.reqs[1] == armedCast.reqs[1] then
@@ -707,6 +735,7 @@ end
 
 -- true when this whisper is a request (or "wc") we would act on; used by the chat filter too
 function WCSW:IsRequestWhisper(msg, sender)
+	sender = self:NormalizeSender(sender)
 	local text = normalize(msg)
 	if text == "wc" then return true end
 	if not self:MatchSpell(text) then return false end
@@ -714,27 +743,45 @@ function WCSW:IsRequestWhisper(msg, sender)
 	return true
 end
 
-function WCSW:OnWhisper(msg, sender)
-	msg, sender = plain(msg), plain(sender)
-	if not msg or not sender or not self.spells then return end
+function WCSW:OnWhisper(rawMsg, rawSender)
+	local msg, raw = plain(rawMsg), plain(rawSender)
+	if not msg or not raw then
+		self:Debug("whisper ignored: the game hid its %s (secret value)", (not msg) and "text" or "sender")
+		return
+	end
+	if not self.spells then self:Debug("whisper ignored: spell list not built yet"); return end
+	local sender = self:NormalizeSender(raw)
 	local text = normalize(msg)
+	self:Debug("whisper from \"%s\" (as \"%s\"): \"%s\"", raw, tostring(sender), text)
+	if not sender then return end
 	if text == "wc" then
+		self:Debug("  -> the \"wc\" list, replying to %s", sender)
 		self:ReplyList(sender)
 		return
 	end
 	local key = self:MatchSpell(text)
-	if not key then return end
+	if not key then
+		self:Debug("  -> no word matched (match mode %s); not a request", tostring(self.db.profile.match))
+		return
+	end
 	local unit, party = self:FindUnit(sender)
 	---@type table
 	local p = self.db.profile
-	if p.groupOnly and not unit then return end
+	self:Debug("  -> %s; sender's unit: %s%s", tostring(self.spells[key] and self.spells[key].name or key),
+		tostring(unit or "none"), (unit and party) and (" (group " .. tostring(party) .. ")") or "")
+	if p.groupOnly and not unit then
+		self:Debug("  -> dropped: not in your party or raid (Settings > General > Group members only)")
+		return
+	end
 	local s = self.spells[key]
 	if not p.enabled then
+		self:Debug("  -> not queued: requests are off (/wc on)")
 		self:Reply(sender, L["Not taking requests right now."])
 		return
 	end
 	local old, at = findRequest(sender, key)
 	if old then
+		self:Debug("  -> already queued, %s in line", self:Ordinal(at))
 		old.fails = 0
 		old.lastTry = nil
 		self:Reply(sender, L["%s: you're already %s in line."]:format(s.name, self:Ordinal(at)))
@@ -754,6 +801,7 @@ function WCSW:OnWhisper(msg, sender)
 	else
 		self:Reply(sender, L["%s: you're %s in line."]:format(s.name, self:Ordinal(#queue)))
 	end
+	self:Debug("  -> queued %s in line; cast ID %s on %s", self:Ordinal(#queue), tostring(req.castID), tostring(unit))
 	self:Fire("RequestAdded", req)
 	changed()
 end
@@ -984,6 +1032,17 @@ function Engine:Init(wcsw)
 		changed()
 	end, L["stop taking requests"])
 	wcsw:AddSlash("status", function() wcsw:PrintStatus() end, L["your spells, their words and the settings"])
+	wcsw:AddSlash("debug", function()
+		local g = wcsw.db.global
+		g.debug = not g.debug
+		wcsw:Print(g.debug and L["Debug on: every whisper's steps print in chat. /wc debug again to stop."] or L["Debug off."])
+	end, L["print every step of each whisper (on or off)"])
+	wcsw:AddSlash("test", function(rest)
+		local me = unitFullName("player") or (UnitName and UnitName("player"))
+		if not rest or rest == "" then wcsw:Print(L["Usage: /wc test <words>, e.g. /wc test motw"]); return end
+		wcsw:Debug("test whisper (no chat sent): \"%s\" from %s", rest, tostring(me))
+		wcsw:OnWhisper(rest, me)
+	end, L["act as if you whispered yourself, e.g. /wc test motw"])
 end
 
 function Engine:Enable(wcsw)

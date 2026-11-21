@@ -137,6 +137,9 @@ WCSW.defaults = {
 		},
 		minimap = { hide = false, angle = 200 },
 	},
+	global = {
+		debug = false,           -- /wc debug: print every step of each whisper
+	},
 }
 
 ---------------------------------------------------------------- modules and callbacks
