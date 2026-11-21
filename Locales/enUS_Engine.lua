@@ -49,3 +49,4 @@ L["act as if you whispered yourself, e.g. /wc test motw"] = true
 L["Out of range"] = true
 L["%s is out of range for %s."] = true
 L["%s went to you: %s was out of range."] = true
+L["Kept %d request(s) from before the reload."] = true

@@ -661,6 +661,39 @@ Advance(5)
 pressSent(myName)
 check("my own request on me is answered", #WCSW.queue == 0, #WCSW.queue)
 
+---------------------------------------------------------------- kept across /reload
+print("-- kept across /reload")
+local function emptyQueue() local q = WCSW.queue; for i = #q, 1, -1 do q[i] = nil end end
+clearAll()
+whisper("fort", "Dan")
+whisper("shield", "Eve")
+WCSW.queue[1].fails = 2
+WCSW:SaveQueue()   -- what PLAYER_LOGOUT runs (firing the event here would also strip AceDB's defaults)
+local kept = WCSW.db.char.queue
+check("logout saves the waiting requests", kept and #kept.reqs == 2, kept and #kept.reqs)
+emptyQueue()
+SENT = {}
+check("login brings them back", WCSW:RestoreQueue() == 2 and queueKeys() == "Dan:fortitude,Eve:shield", queueKeys())
+check("in the same order, tries kept", WCSW.queue[1].fails == 2 and WCSW.queue[1].unit ~= nil)
+check("nobody is whispered", #SENT == 0, #SENT)
+check("the saved copy is used once", WCSW.db.char.queue == nil)
+check("they cast as before", WCSW:NextCast() and WCSW:NextCast().reqs[1].short == "Dan")
+WCSW:SaveQueue()   -- what PLAYER_LOGOUT runs (firing the event here would also strip AceDB's defaults)
+emptyQueue()
+WCSW.db.char.queue.saved = time() - 3600
+check("an hour-old saved queue isn't brought back", WCSW:RestoreQueue() == 0 and #WCSW.queue == 0)
+clearAll()
+WCSW:SaveQueue()   -- what PLAYER_LOGOUT runs (firing the event here would also strip AceDB's defaults)
+check("an empty queue saves nothing", WCSW.db.char.queue == nil)
+WCSW.db.char.queue = { saved = time(), reqs = { { name = "Nobody", spell = "fortitude", fails = 0 } } }
+check("someone not in the group (yet) waits for the group list", WCSW:RestoreQueue() == 1)
+FireEvent("GROUP_ROSTER_UPDATE")
+check("a group update straight after the reload keeps them", #WCSW.queue == 1)
+Advance(20)
+FireEvent("GROUP_ROSTER_UPDATE")
+check("still not in the group after that: dropped", #WCSW.queue == 0, #WCSW.queue)
+clearAll()
+
 ---------------------------------------------------------------- secrets and odd input
 print("-- secrets")
 clearAll()

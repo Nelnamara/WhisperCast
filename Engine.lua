@@ -36,6 +36,7 @@ local pending = nil       -- { cast = cast, time = GetTime() } from CastClicked
 local ERROR_WINDOW = 1    -- seconds after a click in which an error message belongs to it
 local SUCCESS_WINDOW = 12 -- seconds after a click in which a success belongs to it (cast times, summons)
 local LINE_MAX = 255      -- a chat message's length limit
+local RESTORE_GRACE = 10  -- seconds a request kept from before a /reload waits for the group list
 
 ---------------------------------------------------------------- safe values
 -- true when v is a secret value (Retail / Forever chat lockdown, hidden unit data)
@@ -556,35 +557,53 @@ end
 function WCSW:IsInCombat() return inCombat end
 
 -- is the asker in range of the spell: true, false, or nil when the game won't say (no unit, or Retail /
--- Forever hiding unit data in combat)
-function WCSW:InRange(req)
+-- Forever hiding unit data in combat). Asks, in turn: is the unit even visible (too far away to see is
+-- out of range), the spell's range by the rank's ID, the base ID and the name, then the group range.
+-- trace (optional table) gets one "probe=value" entry per question asked, for /wc debug.
+function WCSW:InRange(req, trace)
 	if type(req) ~= "table" or not req.unit then return nil end
 	if req.unit == "player" then return true end
-	local unit, id = req.unit, req.castID
+	local unit = req.unit
+	local function note(k, v) if trace then trace[#trace + 1] = k .. "=" .. (isSecret(v) and "secret" or tostring(v)) end end
 	local ok, r = pcall(function()
-		if id and C_Spell and C_Spell.IsSpellInRange then
-			local v = C_Spell.IsSpellInRange(id, unit)
-			if isSecret(v) then return nil end
-			if v ~= nil then return v and true or false end
-		-- Classic-only global, in the branch for clients without C_Spell.IsSpellInRange
-		---@diagnostic disable-next-line: undefined-global
-		elseif id and IsSpellInRange then
-			local name = spellInfo(id)
-			-- Classic-only global, in the branch for clients without C_Spell.IsSpellInRange
-			---@diagnostic disable-next-line: undefined-global
-			local v = name and IsSpellInRange(name, unit)
-			if isSecret(v) then return nil end
-			if v == 1 or v == true then return true end
-			if v == 0 or v == false then return false end
+		if UnitIsVisible then
+			local vis = UnitIsVisible(unit)
+			note("visible", vis)
+			if vis == false then return false end
+		end
+		local s = req.spell and self.spells and self.spells[req.spell]
+		local tries = { req.castID, s and s.id, s and s.name }
+		for i = 1, 3 do
+			local x = tries[i]
+			if x and (i == 1 or x ~= tries[1]) then
+				local v
+				if C_Spell and C_Spell.IsSpellInRange then
+					v = C_Spell.IsSpellInRange(x, unit)
+				-- Classic-only global, in the branch for clients without C_Spell.IsSpellInRange
+				---@diagnostic disable-next-line: undefined-global
+				elseif IsSpellInRange then
+					local name = type(x) == "number" and spellInfo(x) or x
+					-- Classic-only global, in the branch for clients without C_Spell.IsSpellInRange
+					---@diagnostic disable-next-line: undefined-global
+					v = name and IsSpellInRange(name, unit)
+				end
+				note("spell(" .. tostring(x) .. ")", v)
+				if not isSecret(v) then
+					if v == 1 or v == true then return true end
+					if v == 0 or v == false then return false end
+				end
+			end
 		end
 		if UnitInRange then
 			local inRange, checked = UnitInRange(unit)
+			note("group", inRange); note("checked", checked)
 			if isSecret(inRange) or isSecret(checked) then return nil end
 			if checked then return inRange and true or false end
 		end
 		return nil
 	end)
 	if ok then return r end
+	note("error", r)
 	return nil
 end
 
@@ -947,7 +966,10 @@ end
 -- would otherwise cast it on you (its auto self-cast), so the Cast button stops that press.
 function WCSW:CastAllowed(cast)
 	if type(cast) ~= "table" or inCombat then return true end
-	return self:InRange({ unit = cast.unit, castID = cast.castID }) ~= false
+	local trace = {}
+	local r = self:InRange({ unit = cast.unit, castID = cast.castID, spell = cast.spell }, trace)
+	self:Debug("Range check on %s: %s (%s)", tostring(cast.unit), tostring(r), table.concat(trace, ", "))
+	return r ~= false
 end
 
 -- the Cast button stopped a press (out of range): a red line like the game's own errors, and a try
@@ -1017,6 +1039,52 @@ function Engine:UIError(a1, a2)
 	changed()
 end
 
+---------------------------------------------------------------- kept across /reload
+-- PLAYER_LOGOUT (a /reload too) saves the waiting requests for this character; the next login brings
+-- them back in the same order, with no whispers, if it comes within KEEP_FOR seconds.
+local KEEP_FOR = 600
+function WCSW:SaveQueue()
+	local list = {}
+	for _, r in ipairs(queue) do
+		if not r.done then list[#list + 1] = { name = r.name, spell = r.spell, fails = r.fails } end
+	end
+	self.db.char.queue = (#list > 0) and { saved = time(), reqs = list } or nil
+end
+
+function WCSW:RestoreQueue()
+	local saved = self.db.char.queue
+	self.db.char.queue = nil
+	if type(saved) ~= "table" or type(saved.reqs) ~= "table" then return 0 end
+	local age = time() - (tonumber(saved.saved) or 0)
+	if age < 0 or age > KEEP_FOR then return 0 end
+	local n, waiting = 0, false
+	for _, e in ipairs(saved.reqs) do
+		local s = type(e) == "table" and type(e.name) == "string" and self.spells[e.spell]
+		if s and self:SpellEnabled(e.spell) and not findRequest(e.name, e.spell) then
+			local unit, party = self:FindUnit(e.name)
+			nextID = nextID + 1
+			local req = {
+				id = nextID, name = e.name, short = self:ShortName(self:NormalizeSender(e.name)), spell = e.spell,
+				unit = unit, party = party or 1, class = unit and unitClass(unit) or nil,
+				time = GetTime(), fails = tonumber(e.fails) or 0,
+				restored = (not unit) and GetTime() or nil,
+			}
+			if not unit then waiting = true end
+			self:UpdateRequest(req)
+			queue[#queue + 1] = req
+			n = n + 1
+		end
+	end
+	if n > 0 then
+		self:Debug("kept %d request(s) from before the reload", n)
+		self:Print(L["Kept %d request(s) from before the reload."]:format(n))
+		-- anyone not found yet: look again once the group list is in, and drop who has gone
+		if waiting and C_Timer then C_Timer.After(RESTORE_GRACE + 1, function() Engine:Roster() end) end
+		changed()
+	end
+	return n
+end
+
 ---------------------------------------------------------------- group and combat
 function Engine:Roster()
 	for i = #queue, 1, -1 do
@@ -1025,7 +1093,10 @@ function Engine:Roster()
 		if unit then
 			r.unit, r.party = unit, party or 1
 			r.class = unitClass(unit) or r.class
+			r.restored = nil
 			WCSW:UpdateRequest(r)
+		elseif r.restored and GetTime() - r.restored < RESTORE_GRACE then
+			-- kept from before a /reload; the group list may not be in yet
 		elseif r.unit or WCSW.db.profile.groupOnly then
 			removeAt(i, "left")
 		end
@@ -1165,6 +1236,7 @@ function Engine:Enable(wcsw)
 	f:RegisterEvent("UI_ERROR_MESSAGE")
 	f:RegisterEvent("SPELLS_CHANGED")
 	f:RegisterEvent("UNIT_LEVEL")
+	f:RegisterEvent("PLAYER_LOGOUT")
 	if f.RegisterUnitEvent then
 		f:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 		f:RegisterUnitEvent("UNIT_SPELLCAST_SENT", "player")
@@ -1189,6 +1261,8 @@ function Engine:Enable(wcsw)
 			if unit == "player" then Engine:Succeeded(spellID) end
 		elseif event == "UI_ERROR_MESSAGE" then
 			Engine:UIError(...)
+		elseif event == "PLAYER_LOGOUT" then
+			wcsw:SaveQueue()
 		elseif event == "PLAYER_REGEN_DISABLED" then
 			Engine:CombatStart()
 		elseif event == "PLAYER_REGEN_ENABLED" then
@@ -1217,6 +1291,7 @@ function Engine:Enable(wcsw)
 		addFilter("CHAT_MSG_WHISPER", filterWhisper)
 	end
 	wcsw.filterVia = via
+	wcsw:RestoreQueue()
 end
 
 function Engine:Refresh(wcsw)
