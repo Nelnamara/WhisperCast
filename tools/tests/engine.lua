@@ -618,7 +618,18 @@ Advance(5)
 WCSW:CastBlocked(WCSW:NextCast())
 check("stopped press: a try, back in line", dr.fails == 1 and WCSW.queue[#WCSW.queue] == dr, dr.fails)
 check("stopped press: a red line", redLines[1] == "Dan is out of range for Power Word: Fortitude.", redLines[1])
-check("stopped press: nobody is whispered", #SENT == 0, #SENT)
+check("stopped press: the asker hears why, once", #SENT == 1 and SENT[1].target == "Dan"
+	and SENT[1].text == "[WC] Power Word: Fortitude: couldn't reach you (Out of range). You're still in line.", SENT[1] and SENT[1].text)
+-- presses a second or less apart each count (each is one press); the last one drops it and says so
+for _ = 2, WCSW.MAX_TRIES do
+	local c = WCSW:NextCast()
+	if c.reqs[1] ~= dr then c = { castID = dr.castID, unit = dr.unit, spell = dr.spell, reqs = { dr } } end
+	WCSW:CastBlocked(c)
+end
+check("stopped presses close together all count", dr.fails == WCSW.MAX_TRIES, dr.fails)
+check("the last one drops it", #WCSW.queue == 1 and WCSW.queue[1].short == "Eve", queueKeys())
+check("and tells the asker", lastSent() == "[WC] Couldn't cast Power Word: Fortitude on you (Out of range). Whisper again to retry.", lastSent())
+check("two whispers in all, not one per press", #SENT == 2, #SENT)
 UIErrorsFrame = realErrors
 
 -- the game's auto self-cast put it on me (in combat, where the press can't be stopped): no "coming now",
@@ -639,12 +650,15 @@ local dm = WCSW.queue[1]
 SENT = {}
 Advance(5)
 pressSent(myName)
-check("landed on me: no 'coming now'", #SENT == 0, #SENT)
+local cnm = 0
+for _, m in ipairs(SENT) do if m.text:find("coming now", 1, true) then cnm = cnm + 1 end end
+check("landed on me: no 'coming now'", cnm == 0, cnm)
+check("landed on me: the asker hears why", SENT[1] and SENT[1].text:find("couldn't reach you", 1, true) ~= nil)
 check("landed on me: still queued, a try", WCSW.queue[1] == dm and dm.fails == 1, dm.fails)
 SENT = {}
 Advance(5)
 pressSent("Dan")
-check("on the asker: 'coming now' and answered", #SENT == 1 and #WCSW.queue == 0, #WCSW.queue)
+check("on the asker: 'coming now' and answered", #SENT == 1 and SENT[1].text:find("coming now", 1, true) and #WCSW.queue == 0, #WCSW.queue)
 clearAll()
 whisper("fort", "Dan")
 dm = WCSW.queue[1]
@@ -668,7 +682,12 @@ clearAll()
 whisper("fort", "Dan")
 whisper("shield", "Eve")
 WCSW.queue[1].fails = 2
-WCSW:SaveQueue()   -- what PLAYER_LOGOUT runs (firing the event here would also strip AceDB's defaults)
+-- the real logout: AceDB strips its defaults and drops empty sections; the queue must be in the saved file
+FireEvent("PLAYER_LOGOUT")
+local inFile
+for _, c in pairs(WhisperCastSWDB.char or {}) do if type(c) == "table" and c.queue then inFile = c.queue end end
+check("logout writes the queue into the saved file", inFile and #inFile.reqs == 2, inFile and #inFile.reqs)
+WCSW.db:RegisterDefaults(WCSW.defaults)   -- the harness carries on in the same session
 local kept = WCSW.db.char.queue
 check("logout saves the waiting requests", kept and #kept.reqs == 2, kept and #kept.reqs)
 emptyQueue()

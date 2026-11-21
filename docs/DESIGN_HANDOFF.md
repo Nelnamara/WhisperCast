@@ -93,6 +93,7 @@ Ordinary whispers, so they reach players without the addon. Exact text (enUS):
 - queued in combat: `[WC] %s: you're %s in line, after this fight.`
 - already queued: `[WC] %s: you're already %s in line.`
 - casting: `[WC] %s coming now.`
+- couldn't reach them, first try only (out of range, line of sight; added 21 Nov at the owner's walk note): `[WC] %s: couldn't reach you (%s). You're still in line.`
 - failed for good: `[WC] Couldn't cast %s on you (%s). Whisper again to retry.`
 - cleared: `[WC] Your %s request was cleared.`
 - not taking requests: `[WC] Not taking requests right now.`

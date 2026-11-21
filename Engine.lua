@@ -940,23 +940,32 @@ end
 
 -- a press that didn't reach the asker (out of range, line of sight, not in party): a try, and back in
 -- line; after MAX_TRIES the asker hears why and the request goes
-local function countTry(cast, msg)
+-- everyPress: each call is one press (a press the Cast button stopped), so no grace between them; the
+-- game's error messages use the grace, as one press can bring two of them. The asker hears why on the
+-- first try, and again when the last one drops the request.
+local function countTry(cast, msg, everyPress)
 	pending = nil
 	local target = cast.reqs[1]
 	if not target or not indexOf(target) then changed(); return end
 	if armedCast == cast then setArmed(nil) end
 	local now = GetTime()
-	if not target.lastTry or now - target.lastTry > WCSW.TRY_GRACE then
+	local counted = false
+	if everyPress or not target.lastTry or now - target.lastTry > WCSW.TRY_GRACE then
 		target.fails = (target.fails or 0) + 1
 		target.lastTry = now
+		counted = true
 	end
+	local s = WCSW.spells[target.spell]
+	local why = msg:gsub("[%.!]+$", "")
+	WCSW:Debug("try %d of %d for %s (%s)", target.fails, WCSW.MAX_TRIES, tostring(target.short), why)
 	if target.fails >= WCSW.MAX_TRIES then
-		local s = WCSW.spells[target.spell]
-		local why = msg:gsub("[%.!]+$", "")
 		WCSW:Reply(target.name, L["Couldn't cast %s on you (%s). Whisper again to retry."]:format(s and s.name or target.spell, why))
 		removeAt(indexOf(target), "failed")
 		changed()
 		return
+	end
+	if counted and target.fails == 1 then
+		WCSW:Reply(target.name, L["%s: couldn't reach you (%s). You're still in line."]:format(s and s.name or target.spell, why))
 	end
 	moveToEnd(target)
 	changed()
@@ -979,7 +988,7 @@ function WCSW:CastBlocked(cast)
 	local text = L["%s is out of range for %s."]:format(r and r.short or "?", s and s.name or tostring(cast.spell))
 	self:Debug("Press stopped: %s", text)
 	if UIErrorsFrame and UIErrorsFrame.AddMessage then UIErrorsFrame:AddMessage(text, 1, 0.1, 0.1) end
-	countTry(cast, rangeText())
+	countTry(cast, rangeText(), true)
 end
 
 function Engine:Succeeded(spellID)
@@ -991,7 +1000,7 @@ function Engine:Succeeded(spellID)
 		-- it landed on me, not the asker: say so, and it's a try like the game's out of range error
 		local r, s = cast.reqs[1], WCSW.spells[cast.spell]
 		WCSW:Print(L["%s went to you: %s was out of range."]:format(s and s.name or tostring(cast.spell), r and r.short or "?"))
-		countTry(cast, rangeText())
+		countTry(cast, rangeText(), true)
 		return
 	end
 	pending = nil
@@ -1040,7 +1049,7 @@ function Engine:UIError(a1, a2)
 end
 
 ---------------------------------------------------------------- kept across /reload
--- PLAYER_LOGOUT (a /reload too) saves the waiting requests for this character; the next login brings
+-- Logging out (a /reload too) saves the waiting requests for this character; the next login brings
 -- them back in the same order, with no whispers, if it comes within KEEP_FOR seconds.
 local KEEP_FOR = 600
 function WCSW:SaveQueue()
@@ -1195,6 +1204,9 @@ end
 ---------------------------------------------------------------- module
 function Engine:Init(wcsw)
 	wcsw:BuildSpells()
+	-- the queue is saved from AceDB's own shutdown callback: AceDB's PLAYER_LOGOUT runs first and drops
+	-- empty sections, so a write from our own PLAYER_LOGOUT could land in a table that is no longer saved
+	wcsw.db.RegisterCallback(Engine, "OnDatabaseShutdown", function() wcsw:SaveQueue() end)
 	wcsw:AddSlash("announce", function() wcsw:Announce() end, L["tell your party or raid what to whisper"])
 	wcsw:AddSlash("clear", function() wcsw:ClearQueue(); wcsw:Print(L["Queue cleared."]) end, L["clear the queue"])
 	wcsw:AddSlash("on", function()
@@ -1236,7 +1248,6 @@ function Engine:Enable(wcsw)
 	f:RegisterEvent("UI_ERROR_MESSAGE")
 	f:RegisterEvent("SPELLS_CHANGED")
 	f:RegisterEvent("UNIT_LEVEL")
-	f:RegisterEvent("PLAYER_LOGOUT")
 	if f.RegisterUnitEvent then
 		f:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 		f:RegisterUnitEvent("UNIT_SPELLCAST_SENT", "player")
@@ -1261,8 +1272,6 @@ function Engine:Enable(wcsw)
 			if unit == "player" then Engine:Succeeded(spellID) end
 		elseif event == "UI_ERROR_MESSAGE" then
 			Engine:UIError(...)
-		elseif event == "PLAYER_LOGOUT" then
-			wcsw:SaveQueue()
 		elseif event == "PLAYER_REGEN_DISABLED" then
 			Engine:CombatStart()
 		elseif event == "PLAYER_REGEN_ENABLED" then
