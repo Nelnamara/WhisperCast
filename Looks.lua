@@ -420,7 +420,7 @@ function UI.NewBadge(parent)
 	b.mid = Tex(b, "ARTWORK")
 	b.mid:SetPoint("TOPLEFT", b, "TOPLEFT", 8, 0)
 	b.mid:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -8, 0)
-	b.text = b:CreateFontString(nil, "OVERLAY")
+	b.text = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	UI.Font(b.text, 10.5, nil, true)
 	b.text:SetPoint("CENTER", b, "CENTER", 0, 0)
 	return b
@@ -555,6 +555,7 @@ end
 
 -- put a frame where its settings say: the saved point, or its default
 function UI.ApplyPosition(m)
+	if not (m and m.frame) then return end   -- a frame whose setup never finished
 	local f, s = m.frame, m.db()
 	local pt = s.point
 	if m.anchor and not pt then

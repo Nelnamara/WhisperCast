@@ -229,7 +229,17 @@ Methods.GetEffectiveScale = function() return 1 end
 Methods.GetAlpha = function(s) return s.__alpha end
 Methods.SetAlpha = function(s, a) s.__alpha = a end
 Methods.GetEffectiveAlpha = function(s) return s.__alpha end
-Methods.SetText = function(s, t) s.__text = t end
+-- The game refuses SetText on a font string made with no font (no template, no SetFont/SetFontObject yet)
+Methods.SetText = function(s, t)
+	if s.__strictFont and not s.__font and not s.__fontobj and t ~= nil then error("FontString:SetText(): Font not set", 2) end
+	s.__text = t
+end
+Methods.CreateFontString = function(self, name, layer, template)
+	local c = newObj("FontString", name, self)
+	c.__strictFont, c.__fontobj = true, template
+	if name then _G[name] = c end
+	return c
+end
 Methods.SetFormattedText = function(s, f, ...) s.__text = string.format(f, ...) end
 Methods.GetText = function(s) return s.__text end
 Methods.GetStringWidth = function(s) return #(tostring(s.__text or "")) * 6 end
