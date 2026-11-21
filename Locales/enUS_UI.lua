@@ -1,3 +1,53 @@
--- English text for the UI lane. The English text is the key.
+-- English text for the UI lane (Looks, CastButton, Window, Toast, Folded, Minimap, EditMode). The English
+-- text is the key, so a phrase with no translation shows in English.
 local L = LibStub("AceLocale-3.0"):NewLocale("WhisperCastSW", "enUS", true, true)
 if not L then return end
+L["%d waiting"] = true
+L["%dm"] = true
+L["%ds"] = true
+L["%s READY"] = true
+L["%s asks for %s"] = true
+L["%s on %s"] = true
+L["+%d more"] = true
+L["/wc or the minimap button opens it again."] = true
+L["All %d in group %d: %s covers them"] = true
+L["Blizzard classic"] = true
+L["CAST"] = true
+L["Cast button"] = true
+L["Cast"] = true
+L["Casts wait until the fight ends"] = true
+L["Clear"] = true
+L["Close"] = true
+L["Drag to move."] = true
+L["Drag: move the button"] = true
+L["Flat modern"] = true
+L["Fold away"] = true
+L["Folded icon"] = true
+L["Frames back in their places."] = true
+L["Frames locked."] = true
+L["Frames unlocked: drag them where you like."] = true
+L["IN COMBAT"] = true
+L["Left-click: open the window"] = true
+L["Left-click: show or hide the window"] = true
+L["Next"] = true
+L["No requests"] = true
+L["R%d"] = true
+L["READY"] = true
+L["Request note"] = true
+L["Request notes show here"] = true
+L["Right-click: settings"] = true
+L["Scale"] = true
+L["Size"] = true
+L["Suite dark"] = true
+L["Then"] = true
+L["Whisper (as in 2007)"] = true
+L["WhisperCast settings"] = true
+L["after"] = true
+L["fold the window to its icon, or open it"] = true
+L["hide the window"] = true
+L["lock the frames"] = true
+L["now"] = true
+L["put every frame back in its place"] = true
+L["show or hide the window"] = true
+L["show the window"] = true
+L["unlock the frames to move them"] = true
