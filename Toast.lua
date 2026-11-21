@@ -229,6 +229,8 @@ function T:Enable()
 		-- beside the window until it is moved
 		anchor = function(f)
 			f:ClearAllPoints()
+			-- the settings window global exists once that window has been created
+			---@diagnostic disable-next-line: undefined-global
 			f:SetPoint("TOPLEFT", WhisperCastSWWindow or UIParent, WhisperCastSWWindow and "TOPRIGHT" or "CENTER", 8, 0)
 		end,
 	})

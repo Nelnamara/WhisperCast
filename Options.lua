@@ -249,8 +249,14 @@ function Options.OpenKeyBindings()
 		local ok = pcall(Settings.OpenToCategory, Settings.KEYBINDINGS_CATEGORY_ID)
 		if ok then return "settings" end
 	end
+	-- old Key Bindings frame, only on clients without Settings
+	---@diagnostic disable-next-line: undefined-global
 	if not KeyBindingFrame and KeyBindingFrame_LoadUI then pcall(KeyBindingFrame_LoadUI) end
+	-- old Key Bindings frame, only on clients without Settings
+	---@diagnostic disable-next-line: undefined-global
 	if KeyBindingFrame then
+		-- old Key Bindings frame, only on clients without Settings
+		---@diagnostic disable-next-line: undefined-global
 		ShowUIPanel(KeyBindingFrame)
 		return "frame"
 	end
@@ -583,6 +589,8 @@ Options.TABS = TABS
 function WCSW:OpenSettings(tab)
 	Options:UpdateSpells()
 	if SettingsPanel and SettingsPanel.IsShown and SettingsPanel:IsShown() then pcall(HideUIPanel, SettingsPanel) end
+	-- old Interface Options frame, only on clients that have it
+	---@diagnostic disable-next-line: undefined-global
 	if InterfaceOptionsFrame and InterfaceOptionsFrame.IsShown and InterfaceOptionsFrame:IsShown() then pcall(HideUIPanel, InterfaceOptionsFrame) end
 	ACD():Open(APP)
 	if tab and TABS[tab] then
@@ -615,6 +623,8 @@ local function addLauncher()
 			return "settings"
 		end
 	end
+	-- old Interface Options call, only on clients that have it
+	---@diagnostic disable-next-line: undefined-global
 	if InterfaceOptions_AddCategory then
 		-- older clients: a plain page with the button
 		local panel = CreateFrame("Frame", "WhisperCastSWOptionsPanel", UIParent)
@@ -630,6 +640,8 @@ local function addLauncher()
 		button:SetPoint("TOPLEFT", about, "BOTTOMLEFT", 0, -12)
 		button:SetText(L["Open settings"])
 		button:SetScript("OnClick", function() WCSW:OpenSettings() end)
+		-- old Interface Options call, only on clients that have it
+		---@diagnostic disable-next-line: undefined-global
 		InterfaceOptions_AddCategory(panel)
 		Options.blizFrame = panel
 		return "interface"

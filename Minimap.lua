@@ -80,6 +80,8 @@ local function Build()
 			local px, py = GetCursorPosition()
 			local s = Minimap:GetEffectiveScale() or 1
 			local dx, dy = px / s - (mx or 0), py / s - (my or 0)
+			-- math.atan(dy, dx) only where math.atan2 is missing (two-argument atan)
+			---@diagnostic disable-next-line: redundant-parameter
 			db().angle = math.deg(math.atan2 and math.atan2(dy, dx) or math.atan(dy, dx))
 			Place()
 		end)

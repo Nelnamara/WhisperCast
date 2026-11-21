@@ -66,7 +66,11 @@ local function spellInfo(id)
 		local ok, t = pcall(C_Spell.GetSpellInfo, id)
 		if ok and type(t) == "table" and t.name then return t.name, t.iconID end
 	end
+	-- Classic-only global, read only behind this check
+	---@diagnostic disable-next-line: undefined-global
 	if GetSpellInfo then
+		-- Classic-only global, called only when it exists
+		---@diagnostic disable-next-line: undefined-global
 		local ok, name, _, icon = pcall(GetSpellInfo, id)
 		if ok and name then return name, icon end
 	end
@@ -75,7 +79,11 @@ WCSW.SpellInfo = function(_, id) return spellInfo(id) end
 
 local function isKnown(id)
 	if not id then return false end
+	-- old global on clients without C_SpellBook
+	---@diagnostic disable-next-line: deprecated
 	if IsPlayerSpell then
+		-- old global on clients without C_SpellBook
+		---@diagnostic disable-next-line: deprecated
 		local ok, r = pcall(IsPlayerSpell, id)
 		if ok and r then return true end
 	end
@@ -83,7 +91,11 @@ local function isKnown(id)
 		local ok, r = pcall(C_SpellBook.IsSpellKnown, id)
 		if ok and r then return true end
 	end
+	-- old global on clients without C_SpellBook
+	---@diagnostic disable-next-line: deprecated
 	if IsSpellKnown then
+		-- old global on clients without C_SpellBook
+		---@diagnostic disable-next-line: deprecated
 		local ok, r = pcall(IsSpellKnown, id)
 		if ok and r then return true end
 	end
@@ -296,8 +308,8 @@ local function unitClass(unit)
 end
 
 local function unitLevel(unit)
-	local ok, lv = pcall(UnitLevel, unit)
-	lv = ok and plainNumber(lv) or nil
+	local ok, raw = pcall(UnitLevel, unit)
+	local lv = ok and plainNumber(raw) or nil
 	if lv and lv > 0 then return lv end
 end
 
@@ -342,6 +354,8 @@ local function canSend()
 end
 
 local function sendChat(text, chatType, target)
+	-- C_ChatInfo.SendChatMessage first; the old global is the fallback
+	---@diagnostic disable-next-line: deprecated
 	local fn = (C_ChatInfo and C_ChatInfo.SendChatMessage) or SendChatMessage
 	if not fn or not canSend() then return false end
 	local ok = pcall(fn, text, chatType, nil, target)
@@ -509,8 +523,12 @@ function WCSW:InRange(req)
 			local v = C_Spell.IsSpellInRange(id, unit)
 			if isSecret(v) then return nil end
 			if v ~= nil then return v and true or false end
+		-- Classic-only global, in the branch for clients without C_Spell.IsSpellInRange
+		---@diagnostic disable-next-line: undefined-global
 		elseif id and IsSpellInRange then
 			local name = spellInfo(id)
+			-- Classic-only global, in the branch for clients without C_Spell.IsSpellInRange
+			---@diagnostic disable-next-line: undefined-global
 			local v = name and IsSpellInRange(name, unit)
 			if isSecret(v) then return nil end
 			if v == 1 or v == true then return true end
@@ -707,6 +725,7 @@ function WCSW:OnWhisper(msg, sender)
 	local key = self:MatchSpell(text)
 	if not key then return end
 	local unit, party = self:FindUnit(sender)
+	---@type table
 	local p = self.db.profile
 	if p.groupOnly and not unit then return end
 	local s = self.spells[key]
@@ -931,6 +950,7 @@ function WCSW:Announce()
 end
 
 function WCSW:PrintStatus()
+	---@type table
 	local p = self.db.profile
 	local yes, no = L["yes"], L["no"]
 	self:Print(L["Taking requests: %s. Matching: %s. Group members only: %s. Waiting: %d."]:format(

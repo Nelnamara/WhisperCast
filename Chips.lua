@@ -418,6 +418,7 @@ local function Constructor()
 	label:SetHeight(12)
 	label:Hide()
 
+	---@type table<string, any>
 	local widget = {
 		frame = frame,
 		label = label,

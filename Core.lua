@@ -178,6 +178,8 @@ end
 
 -- r, g, b for a class file name ("PRIEST"); grey when unknown
 function WCSW:ClassColor(class)
+	-- CUSTOM_CLASS_COLORS exists only when a class-colour addon defines it
+	---@diagnostic disable-next-line: undefined-global
 	local c = class and (CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[class] or RAID_CLASS_COLORS and RAID_CLASS_COLORS[class])
 	if c then return c.r, c.g, c.b end
 	return 0.7, 0.7, 0.7

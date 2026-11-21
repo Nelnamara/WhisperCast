@@ -88,7 +88,11 @@ function W.InRange(castID, spell, unit)
 		local r
 		if C_Spell and C_Spell.IsSpellInRange then
 			r = C_Spell.IsSpellInRange(castID or spell.id, unit)
+		-- Classic-only global, in the branch for clients without C_Spell.IsSpellInRange
+		---@diagnostic disable-next-line: undefined-global
 		elseif IsSpellInRange and spell and spell.name then
+			-- Classic-only global, in the branch for clients without C_Spell.IsSpellInRange
+			---@diagnostic disable-next-line: undefined-global
 			r = IsSpellInRange(spell.name, unit)
 			if r ~= nil then r = (r == 1) end
 		end

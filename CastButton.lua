@@ -175,6 +175,8 @@ function CB:DrawButton(b, v)
 		b.name:SetShown(show)
 		b.spellText:SetShown(show)
 		if show then
+			---@cast cast table
+			---@cast req table
 			local r, g, bl = WCSW:ClassColor(req.class)
 			local more = #cast.reqs > 1 and (" +" .. (#cast.reqs - 1)) or ""
 			b.name:SetText((req.short or WCSW:ShortName(req.name) or "?") .. more)
