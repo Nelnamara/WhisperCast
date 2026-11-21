@@ -76,6 +76,7 @@ WCSW.defaults = {
 		enabled = true,          -- taking requests
 		match = "start",         -- "exact" (the whole whisper), "start" (its first words), "any" (any words)
 		groupOnly = true,        -- only from party or raid members
+		groupChat = false,       -- also take requests said in party, raid or instance chat
 		replies = true,          -- whisper the asker back
 		hideOwnReplies = true,   -- hide my [WC] whispers from my chat
 		hideRequests = false,    -- hide the request whispers from my chat

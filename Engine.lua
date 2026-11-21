@@ -18,6 +18,12 @@ local WCSW = WhisperCastSW
 local L = WCSW.L
 
 local Engine = WCSW:AddModule("Engine", {})
+-- group chat events and the chat each one is (Settings > General > Also from party and raid chat)
+Engine.GROUP_CHAT = {
+	CHAT_MSG_PARTY = "PARTY", CHAT_MSG_PARTY_LEADER = "PARTY",
+	CHAT_MSG_RAID = "RAID", CHAT_MSG_RAID_LEADER = "RAID", CHAT_MSG_RAID_WARNING = "RAID",
+	CHAT_MSG_INSTANCE_CHAT = "INSTANCE_CHAT", CHAT_MSG_INSTANCE_CHAT_LEADER = "INSTANCE_CHAT",
+}
 WCSW.Engine = Engine
 
 local queue = {}          -- requests in line order
@@ -769,7 +775,8 @@ function WCSW:IsRequestWhisper(msg, sender)
 	return true
 end
 
-function WCSW:OnWhisper(rawMsg, rawSender)
+-- source: nil for a whisper, else the chat it was said in ("PARTY", "RAID", "INSTANCE_CHAT")
+function WCSW:OnWhisper(rawMsg, rawSender, source)
 	local msg, raw = plain(rawMsg), plain(rawSender)
 	if not msg or not raw then
 		self:Debug("whisper ignored: the game hid its %s (secret value)", (not msg) and "text" or "sender")
@@ -782,16 +789,19 @@ function WCSW:OnWhisper(rawMsg, rawSender)
 		return
 	end
 	local text = normalize(msg)
-	self:Debug("whisper from \"%s\": \"%s\"", raw, text)
+	self:Debug("%s from \"%s\": \"%s\"", source and (source:lower() .. " chat") or "whisper", raw, text)
 	if not sender then return end
 	if text == "wc" then
 		self:Debug("  -> the \"wc\" list, replying to %s", sender)
 		self:ReplyList(sender)
 		return
 	end
-	local key = self:MatchSpell(text)
+	-- in group chat "any word" would queue ordinary talk ("anyone got fort?"), so it reads as "first words"
+	local mode = self.db.profile.match
+	if source and mode == "any" then mode = "start" end
+	local key = self:MatchSpell(text, mode)
 	if not key then
-		self:Debug("  -> no word matched (match mode %s); not a request", tostring(self.db.profile.match))
+		self:Debug("  -> no word matched (match mode %s); not a request", tostring(mode))
 		return
 	end
 	local unit, party = self:FindUnit(sender)
@@ -1092,6 +1102,7 @@ function Engine:Enable(wcsw)
 	local f = self.frame or CreateFrame("Frame")
 	self.frame = f
 	f:RegisterEvent("CHAT_MSG_WHISPER")
+	for ev in pairs(Engine.GROUP_CHAT) do f:RegisterEvent(ev) end
 	f:RegisterEvent("GROUP_ROSTER_UPDATE")
 	f:RegisterEvent("PLAYER_REGEN_DISABLED")
 	f:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -1107,7 +1118,13 @@ function Engine:Enable(wcsw)
 	end
 	f:SetScript("OnEvent", function(_, event, ...)
 		if event == "CHAT_MSG_WHISPER" then
-			wcsw:OnWhisper(...)
+			local msg, sender = ...   -- only these two: the event's third field (the language) isn't a source
+			wcsw:OnWhisper(msg, sender)
+		elseif Engine.GROUP_CHAT[event] then
+			if wcsw.db.profile.groupChat then
+				local msg, sender = ...
+				wcsw:OnWhisper(msg, sender, Engine.GROUP_CHAT[event])
+			end
 		elseif event == "UNIT_SPELLCAST_SENT" then
 			local unit, _, _, spellID = ...
 			if unit == "player" then Engine:Sent(spellID) end

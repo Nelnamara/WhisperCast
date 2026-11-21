@@ -416,6 +416,7 @@ function Options:Build()
 			enabled = toggle(11, L["Take requests"], L["Queue the spells group members whisper for. Off: nothing new joins the queue."], "enabled", "all"),
 			match = matchOption(12),
 			groupOnly = toggle(13, L["Group members only"], L["Only take requests from your party or raid."], "groupOnly", "all"),
+			groupChat = toggle(14, L["Also from party and raid chat"], L["Take requests said in party, raid or instance chat as well as whispers. Matches the first words only, so ordinary chat doesn't queue anything; replies still go by whisper."], "groupChat", "all", { width = 1.5 }),
 			replies = header(20, L["Replies"]),
 			replyOn = toggle(21, L["Whisper replies"], L["Tell the asker their place in line, when it's cast and when it's cleared."], "replies", "all"),
 			hideOwnReplies = toggle(22, L["Hide my [WC] whispers"], L["Keep your own [WC] replies out of your chat."], "hideOwnReplies", "all", { width = 1.5 }),

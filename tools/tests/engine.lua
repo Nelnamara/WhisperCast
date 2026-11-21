@@ -810,6 +810,26 @@ do
 	local fwh = FILTERS.CHAT_MSG_WHISPER and FILTERS.CHAT_MSG_WHISPER[1]
 	check("my own [WC] reply echoed back to me is hidden", fwh and fwh(DEFAULT_CHAT_FRAME, "CHAT_MSG_WHISPER", "[WC] x: you're 1st in line.", UnitName("player")) == true)
 	check("someone else's [WC] whisper is shown", fwh and fwh(DEFAULT_CHAT_FRAME, "CHAT_MSG_WHISPER", "[WC] x: you're 1st in line.", "Alice") == false)
+	-- requests said in party / raid / instance chat (off by default)
+	clearAll()
+	FireEvent("CHAT_MSG_PARTY", word, "Alice", "", "", "Alice")
+	check("party chat ignored while the setting is off", #WCSW.queue == 0, queueKeys())
+	p.groupChat = true
+	FireEvent("CHAT_MSG_PARTY", word, "Alice", "", "", "Alice")
+	check("party chat queues with the setting on", queueKeys():match("^Alice:") ~= nil, queueKeys())
+	check("its reply goes by whisper", SENT[#SENT] and SENT[#SENT].chatType == "WHISPER" and SENT[#SENT].target == "Alice", SENT[#SENT] and SENT[#SENT].chatType)
+	clearAll()
+	FireEvent("CHAT_MSG_RAID", word, "Alice", "", "", "Alice")
+	FireEvent("CHAT_MSG_INSTANCE_CHAT_LEADER", word, "Bob", "", "", "Bob")
+	check("raid and instance chat queue too", #WCSW.queue >= 1, queueKeys())
+	clearAll()
+	p.match = "any"
+	FireEvent("CHAT_MSG_PARTY", "anyone got " .. word .. " up?", "Alice", "", "", "Alice")
+	check("group chat never matches mid-sentence, even with any-word matching", #WCSW.queue == 0, queueKeys())
+	whisper("anyone got " .. word .. " up?", "Alice")
+	check("whispers still use any-word matching", #WCSW.queue == 1, queueKeys())
+	p.match = "start"
+	p.groupChat = false
 	-- "coming now" waits for the game to take the cast
 	clearAll()
 	whisper(word, "Alice")

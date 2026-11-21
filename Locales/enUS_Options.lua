@@ -148,3 +148,5 @@ L["WhisperCast: Second Wind has its settings in its own window."] = true
 L["Open settings"] = true
 L["Opens the settings window (the same as /wc settings)."] = true
 L["open the settings"] = true
+L["Also from party and raid chat"] = true
+L["Take requests said in party, raid or instance chat as well as whispers. Matches the first words only, so ordinary chat doesn't queue anything; replies still go by whisper."] = true
