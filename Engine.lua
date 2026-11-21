@@ -5,7 +5,7 @@
 
 	Flow: CHAT_MSG_WHISPER -> MatchSpell (exact / start / any, as 2007) -> group check -> queue + reply.
 	The Cast button reads NextCast() out of combat and calls CastClicked(cast) from PreClick, which
-	whispers "coming now"; the cast is answered on UNIT_SPELLCAST_SUCCEEDED ("player") and a failure
+	whispers "coming now" once the game takes the cast (UNIT_SPELLCAST_SENT); the cast is answered on UNIT_SPELLCAST_SUCCEEDED ("player") and a failure
 	comes back through UI_ERROR_MESSAGE (out of range, line of sight, not in party: a try; cooldown:
 	back in line without a try; a group version missing its reagent: single casts for the session).
 	In combat the request NextCast() returned when the fight started is armed and stays on the button.
@@ -336,37 +336,47 @@ local function unitLevel(unit)
 end
 
 -- the party or raid unit of a player by name, and their raid subgroup (1 in a party); nil when not grouped
+local function bareName(name)
+	if type(name) ~= "string" then return nil end
+	local first = (name:match("^([^%-]+)") or name)
+	first = first:match("^(%S+)") or first
+	return first:lower()
+end
+
+-- the party or raid unit of a player by name, and their raid subgroup (1 in a party); nil when not grouped.
+-- An exact name wins. On WoW: Forever only (no other client has surnames) a name can carry a surname
+-- ("Marykatherin Gallagher") in chat, in UnitName, or both (seen in game 20 Nov 2026), so there the first
+-- word, realm dropped, on both sides, matches too.
 function WCSW:FindUnit(name)
 	local c = canon(name)
 	if not c then return nil end
+	local units = {}
 	if IsInRaid and IsInRaid() then
-		for i = 1, 40 do
-			local u = "raid" .. i
-			local f = unitFullName(u)
-			if f and canon(f) == c then
-				local sub = 1
-				if GetRaidRosterInfo then
-					local ok, _, _, g = pcall(GetRaidRosterInfo, i)
-					if ok and plainNumber(g) then sub = g end
-				end
-				local isMe = false
-				pcall(function() isMe = UnitIsUnit(u, "player") and true or false end)
-				return isMe and "player" or u, sub
-			end
-		end
+		for i = 1, 40 do units[#units + 1] = { "raid" .. i, i } end
 	elseif IsInGroup and IsInGroup() then
-		for i = 1, 4 do
-			local u = "party" .. i
-			local f = unitFullName(u)
-			if f and canon(f) == c then return u, 1 end
-		end
+		for i = 1, 4 do units[#units + 1] = { "party" .. i } end
 	end
-	local me = unitFullName("player")
-	if me and canon(me) == c then return "player", 1 end
-	-- "Name-Realm" where the roster has no realm for them (or another spelling of it): a group member
-	-- with that name wins, as CooldownCollaborator does
-	local bare = name:match("^([^%-]+)%-")
-	if bare then return self:FindUnit(bare) end
+	units[#units + 1] = { "player" }
+	local function found(u, raidIndex)
+		local sub = 1
+		if raidIndex and GetRaidRosterInfo then
+			local ok, _, _, g = pcall(GetRaidRosterInfo, raidIndex)
+			if ok and plainNumber(g) then sub = g end
+		end
+		local isMe = u == "player"
+		if not isMe then pcall(function() isMe = UnitIsUnit(u, "player") and true or false end) end
+		return isMe and "player" or u, sub
+	end
+	for _, e in ipairs(units) do
+		local f = unitFullName(e[1])
+		if f and canon(f) == c then return found(e[1], e[2]) end
+	end
+	if not WCSW.isForever then return nil end   -- surnames exist only on WoW: Forever
+	local b = bareName(name)
+	for _, e in ipairs(units) do
+		local f = unitFullName(e[1])
+		if f and bareName(f) == b then return found(e[1], e[2]) end
+	end
 	return nil
 end
 
@@ -638,19 +648,30 @@ function WCSW:NextCast()
 end
 
 -- the Cast button calls this from PreClick, so the success or failure that follows is matched to it
--- Each press whispers "coming now" to everyone the cast answers (the armed press once per fight).
+-- A press remembers the cast; "coming now" waits for the game to take it (Engine:Sent).
 function WCSW:CastClicked(cast)
 	self:Debug("Cast pressed: %s on %s", tostring(cast and cast.castID), tostring(cast and cast.unit))
 	if type(cast) ~= "table" or not cast.reqs then return end
-	pending = { cast = cast, time = GetTime() }
 	if inCombat and armedCast and cast.reqs[1] == armedCast.reqs[1] then
-		if armedCast.pressed then return end
+		if armedCast.pressed then return end   -- the wrap blocks this press; keep the first one's state
 		armedCast.pressed = true
 	end
+	pending = { cast = cast, time = GetTime() }
+end
+
+-- The game took the cast (UNIT_SPELLCAST_SENT for the player, any rank of the pressed spell): now
+-- "coming now" goes out, once per press, so a press that casts nothing (out of range before it starts,
+-- no unit, the combat wrap) whispers nobody.
+function Engine:Sent(spellID)
+	spellID = plainNumber(spellID)
+	if not spellID or not pending or pending.told or GetTime() - pending.time > 2 then return end
+	local cast = pending.cast
+	if WCSW.spellByID[spellID] ~= cast.spell then return end
+	pending.told = true
 	for _, r in ipairs(cast.reqs) do
 		if indexOf(r) and not r.done then
-			local s = self.spells[r.spell]
-			self:Reply(r.name, L["%s coming now."]:format(s and s.name or r.spell))
+			local s = WCSW.spells[r.spell]
+			WCSW:Reply(r.name, L["%s coming now."]:format(s and s.name or r.spell))
 		end
 	end
 end
@@ -735,7 +756,6 @@ end
 
 -- true when this whisper is a request (or "wc") we would act on; used by the chat filter too
 function WCSW:IsRequestWhisper(msg, sender)
-	sender = self:NormalizeSender(sender)
 	local text = normalize(msg)
 	if text == "wc" then return true end
 	if not self:MatchSpell(text) then return false end
@@ -750,9 +770,9 @@ function WCSW:OnWhisper(rawMsg, rawSender)
 		return
 	end
 	if not self.spells then self:Debug("whisper ignored: spell list not built yet"); return end
-	local sender = self:NormalizeSender(raw)
+	local sender = raw   -- replies go to the name exactly as chat gave it ("Name Surname" on Forever)
 	local text = normalize(msg)
-	self:Debug("whisper from \"%s\" (as \"%s\"): \"%s\"", raw, tostring(sender), text)
+	self:Debug("whisper from \"%s\": \"%s\"", raw, text)
 	if not sender then return end
 	if text == "wc" then
 		self:Debug("  -> the \"wc\" list, replying to %s", sender)
@@ -769,6 +789,10 @@ function WCSW:OnWhisper(rawMsg, rawSender)
 	local p = self.db.profile
 	self:Debug("  -> %s; sender's unit: %s%s", tostring(self.spells[key] and self.spells[key].name or key),
 		tostring(unit or "none"), (unit and party) and (" (group " .. tostring(party) .. ")") or "")
+	if not unit then
+		local me = unitFullName("player")
+		self:Debug("  -> no group member by that name; the game calls you \"%s\"", tostring(me))
+	end
 	if p.groupOnly and not unit then
 		self:Debug("  -> dropped: not in your party or raid (Settings > General > Group members only)")
 		return
@@ -790,7 +814,7 @@ function WCSW:OnWhisper(rawMsg, rawSender)
 	end
 	nextID = nextID + 1
 	local req = {
-		id = nextID, name = sender, short = self:ShortName(sender), spell = key,
+		id = nextID, name = sender, short = self:ShortName(self:NormalizeSender(sender)), spell = key,
 		unit = unit, party = party or 1, class = unit and unitClass(unit) or nil,
 		time = GetTime(), fails = 0, inCombat = inCombat or nil,
 	}
@@ -1060,12 +1084,17 @@ function Engine:Enable(wcsw)
 	f:RegisterEvent("UNIT_LEVEL")
 	if f.RegisterUnitEvent then
 		f:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+		f:RegisterUnitEvent("UNIT_SPELLCAST_SENT", "player")
 	else
 		f:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+		f:RegisterEvent("UNIT_SPELLCAST_SENT")
 	end
 	f:SetScript("OnEvent", function(_, event, ...)
 		if event == "CHAT_MSG_WHISPER" then
 			wcsw:OnWhisper(...)
+		elseif event == "UNIT_SPELLCAST_SENT" then
+			local unit, _, _, spellID = ...
+			if unit == "player" then Engine:Sent(spellID) end
 		elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
 			local unit, _, spellID = ...
 			if unit == "player" then Engine:Succeeded(spellID) end

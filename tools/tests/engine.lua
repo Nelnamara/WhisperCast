@@ -157,6 +157,12 @@ local function removedWhy(name)
 end
 local p = WCSW.db.profile
 local fort = WCSW.spells.fortitude
+-- a press in the game is followed by UNIT_SPELLCAST_SENT when the cast starts; NO_SENT = the game took nothing
+local realClicked = WCSW.CastClicked
+WCSW.CastClicked = function(self, cast)
+	realClicked(self, cast)
+	if cast and cast.castID and not NO_SENT then FireEvent("UNIT_SPELLCAST_SENT", "player", "Target", "Cast-S", cast.castID) end
+end
 
 ---------------------------------------------------------------- spells
 print("-- spells")
@@ -772,29 +778,50 @@ do
 	local word = WCSW.hasRanks and "kings" or "freedom"
 	clearAll()
 	whisper(word, "Alice Nyx")
-	check("surname sender \"Alice Nyx\" queues as Alice", queueKeys():match("^Alice:") ~= nil, queueKeys())
-	check("its reply goes to \"Alice\", not the surname", SENT[#SENT] and SENT[#SENT].target == "Alice", SENT[#SENT] and SENT[#SENT].target)
+	if WCSW.isForever then
+		check("Forever: surname sender \"Alice Nyx\" finds Alice in the group", queueKeys():match("^Alice:") ~= nil, queueKeys())
+		check("Forever: the reply goes to the full \"Alice Nyx\" (the server needs it)", SENT[#SENT] and SENT[#SENT].target == "Alice Nyx", SENT[#SENT] and SENT[#SENT].target)
+		clearAll()
+		-- the game itself calls me "Tester Stormrider"; chat says the same
+		local saved = PLAYER.name
+		PLAYER.name = saved .. " Stormrider"
+		if ROSTER[1] then ROSTER[1].name = PLAYER.name end
+		whisper(word, PLAYER.name)
+		local r = WCSW.queue[1]
+		check("Forever: my own whisper with my surname queues on me (unit player)", r and r.unit == "player", r and r.unit)
+		clearAll()
+		-- chat with a surname, the roster without one (and the other way round)
+		PLAYER.name = saved
+		if ROSTER[1] then ROSTER[1].name = saved end
+		whisper(word, saved .. " Stormrider")
+		r = WCSW.queue[1]
+		check("Forever: chat surname, roster without: still me", r and r.unit == "player", r and r.unit)
+		check("Forever: IsRequestWhisper accepts a surname sender (chat filter)", WCSW:IsRequestWhisper(word, "Alice Nyx") == true)
+	else
+		check("not Forever: \"Alice Nyx\" is not Alice (no surnames on this client)", queueKeys() == "", queueKeys())
+	end
+	-- "coming now" waits for the game to take the cast
 	clearAll()
-	whisper(word, "Alice Nyx-Faraway")
-	check("surname + realm \"Alice Nyx-Faraway\" still finds Alice in the group", queueKeys():match("^Alice:") ~= nil, queueKeys())
-	clearAll()
-	local me = UnitName("player")
-	whisper(word, me .. " Stormrider")
-	local r = WCSW.queue[1]
-	check("my own whisper with my surname queues on me (unit player)", r and r.unit == "player", r and r.unit)
-	check("IsRequestWhisper accepts a surname sender (chat filter)", WCSW:IsRequestWhisper(word, "Alice Nyx") == true)
+	whisper(word, "Alice")
+	SENT = {}
+	NO_SENT = true
+	WCSW:CastClicked(WCSW:NextCast())
+	check("a press the game doesn't take whispers nobody", #SENT == 0, #SENT)
+	NO_SENT = nil
+	WCSW:CastClicked(WCSW:NextCast())
+	check("a press the game takes sends 'coming now' once", #SENT == 1 and SENT[1].text:find("coming now", 1, true) ~= nil, #SENT)
 	-- /wc debug and /wc test
 	clearAll()
 	WCSW.db.global.debug = true
 	local before = #CHAT
 	WCSW.slash.test(word)
 	local saw = false
-	for i = before + 1, #CHAT do if tostring(CHAT[i]):find("WC debug", 1, true) and tostring(CHAT[i]):find("queued", 1, true) then saw = true end end
+	for k = before + 1, #CHAT do if tostring(CHAT[k]):find("WC debug", 1, true) and tostring(CHAT[k]):find("queued", 1, true) then saw = true end end
 	check("/wc test queues on me and /wc debug prints the steps", WCSW.queue[1] and WCSW.queue[1].unit == "player" and saw)
 	before = #CHAT
-	whisper("hello there", "Bob Nyx")
+	whisper("hello there", "Bob")
 	saw = false
-	for i = before + 1, #CHAT do if tostring(CHAT[i]):find("no word matched", 1, true) then saw = true end end
+	for k = before + 1, #CHAT do if tostring(CHAT[k]):find("no word matched", 1, true) then saw = true end end
 	check("/wc debug says why chatter isn't a request", saw)
 	WCSW.db.global.debug = false
 	clearAll()
