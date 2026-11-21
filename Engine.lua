@@ -665,14 +665,29 @@ function WCSW:CastClicked(cast)
 	pending = { cast = cast, time = GetTime() }
 end
 
+-- did the game put this cast on me when it was for someone else (its auto self-cast, in combat where the
+-- button can't stop the press)? target is UNIT_SPELLCAST_SENT's target name
+local function wentToMe(cast, target)
+	target = plain(target)
+	if type(target) ~= "string" or target == "" or not cast.unit or cast.unit == "player" then return false end
+	if UnitIsUnit and UnitIsUnit(cast.unit, "player") then return false end
+	local u = WCSW:FindUnit(target)
+	return u ~= nil and (u == "player" or (UnitIsUnit and UnitIsUnit(u, "player")) or false)
+end
+
 -- The game took the cast (UNIT_SPELLCAST_SENT for the player, any rank of the pressed spell): now
 -- "coming now" goes out, once per press, so a press that casts nothing (out of range before it starts,
 -- no unit, the combat wrap) whispers nobody.
-function Engine:Sent(spellID)
+function Engine:Sent(spellID, target)
 	spellID = plainNumber(spellID)
 	if not spellID or not pending or pending.told or GetTime() - pending.time > 2 then return end
 	local cast = pending.cast
 	if WCSW.spellByID[spellID] ~= cast.spell then return end
+	if wentToMe(cast, target) then
+		WCSW:Debug("Cast went to you, not %s", tostring(cast.unit))
+		pending.toMe = true
+		return
+	end
 	pending.told = true
 	for _, r in ipairs(cast.reqs) do
 		if indexOf(r) and not r.done then
@@ -897,11 +912,66 @@ local function moveToEnd(req)
 	if i then table.remove(queue, i); queue[#queue + 1] = req end
 end
 
+-- the game's out of range text, without its full stop
+local function rangeText()
+	local t = SPELL_FAILED_OUT_OF_RANGE or ERR_OUT_OF_RANGE
+	if type(t) ~= "string" then t = L["Out of range"] end
+	return (t:gsub("[%.!]+$", ""))
+end
+
+-- a press that didn't reach the asker (out of range, line of sight, not in party): a try, and back in
+-- line; after MAX_TRIES the asker hears why and the request goes
+local function countTry(cast, msg)
+	pending = nil
+	local target = cast.reqs[1]
+	if not target or not indexOf(target) then changed(); return end
+	if armedCast == cast then setArmed(nil) end
+	local now = GetTime()
+	if not target.lastTry or now - target.lastTry > WCSW.TRY_GRACE then
+		target.fails = (target.fails or 0) + 1
+		target.lastTry = now
+	end
+	if target.fails >= WCSW.MAX_TRIES then
+		local s = WCSW.spells[target.spell]
+		local why = msg:gsub("[%.!]+$", "")
+		WCSW:Reply(target.name, L["Couldn't cast %s on you (%s). Whisper again to retry."]:format(s and s.name or target.spell, why))
+		removeAt(indexOf(target), "failed")
+		changed()
+		return
+	end
+	moveToEnd(target)
+	changed()
+end
+
+-- Before a press, out of combat: false when the game says the asker is out of the spell's range. The game
+-- would otherwise cast it on you (its auto self-cast), so the Cast button stops that press.
+function WCSW:CastAllowed(cast)
+	if type(cast) ~= "table" or inCombat then return true end
+	return self:InRange({ unit = cast.unit, castID = cast.castID }) ~= false
+end
+
+-- the Cast button stopped a press (out of range): a red line like the game's own errors, and a try
+function WCSW:CastBlocked(cast)
+	if type(cast) ~= "table" or not cast.reqs then return end
+	local r, s = cast.reqs[1], self.spells[cast.spell]
+	local text = L["%s is out of range for %s."]:format(r and r.short or "?", s and s.name or tostring(cast.spell))
+	self:Debug("Press stopped: %s", text)
+	if UIErrorsFrame and UIErrorsFrame.AddMessage then UIErrorsFrame:AddMessage(text, 1, 0.1, 0.1) end
+	countTry(cast, rangeText())
+end
+
 function Engine:Succeeded(spellID)
 	spellID = plainNumber(spellID)
 	if not spellID or not pending or GetTime() - pending.time > SUCCESS_WINDOW then return end
 	local cast = pending.cast
 	if WCSW.spellByID[spellID] ~= cast.spell then return end
+	if pending.toMe then
+		-- it landed on me, not the asker: say so, and it's a try like the game's out of range error
+		local r, s = cast.reqs[1], WCSW.spells[cast.spell]
+		WCSW:Print(L["%s went to you: %s was out of range."]:format(s and s.name or tostring(cast.spell), r and r.short or "?"))
+		countTry(cast, rangeText())
+		return
+	end
 	pending = nil
 	for _, r in ipairs(cast.reqs) do
 		local i = indexOf(r)
@@ -938,25 +1008,11 @@ function Engine:UIError(a1, a2)
 		return
 	end
 	if kind == "cooldown" and not onCooldown(cast.castID) then return end -- the global cooldown: press again
+	if kind == "try" then countTry(cast, msg); return end
 	pending = nil
 	local target = cast.reqs[1]
 	if not target or not indexOf(target) then return end
 	if armedCast == cast then setArmed(nil) end
-	if kind == "try" then
-		local now = GetTime()
-		if not target.lastTry or now - target.lastTry > WCSW.TRY_GRACE then
-			target.fails = (target.fails or 0) + 1
-			target.lastTry = now
-		end
-		if target.fails >= WCSW.MAX_TRIES then
-			local s = WCSW.spells[target.spell]
-			local why = msg:gsub("[%.!]+$", "")
-			WCSW:Reply(target.name, L["Couldn't cast %s on you (%s). Whisper again to retry."]:format(s and s.name or target.spell, why))
-			removeAt(indexOf(target), "failed")
-			changed()
-			return
-		end
-	end
 	moveToEnd(target)
 	changed()
 end
@@ -1126,8 +1182,8 @@ function Engine:Enable(wcsw)
 				wcsw:OnWhisper(msg, sender, Engine.GROUP_CHAT[event])
 			end
 		elseif event == "UNIT_SPELLCAST_SENT" then
-			local unit, _, _, spellID = ...
-			if unit == "player" then Engine:Sent(spellID) end
+			local unit, target, _, spellID = ...
+			if unit == "player" then Engine:Sent(spellID, target) end
 		elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
 			local unit, _, spellID = ...
 			if unit == "player" then Engine:Succeeded(spellID) end

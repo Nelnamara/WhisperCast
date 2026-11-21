@@ -46,3 +46,6 @@ L["Debug off."] = true
 L["print every step of each whisper (on or off)"] = true
 L["Usage: /wc test <words>, e.g. /wc test motw"] = true
 L["act as if you whispered yourself, e.g. /wc test motw"] = true
+L["Out of range"] = true
+L["%s is out of range for %s."] = true
+L["%s went to you: %s was out of range."] = true

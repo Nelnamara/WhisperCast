@@ -326,6 +326,19 @@ FAKE.clicked, CASTS = {}, {}
 Click(main)
 check("key-down setting: still one CastClicked and one cast", #FAKE.clicked == 1 and #CASTS == 1)
 CVARS.ActionButtonUseKeyDown = false
+-- the asker out of range (out of combat): the press is stopped, the Engine hears CastBlocked, the type comes back
+local realAllowed, realBlocked, blockedCasts = WCSW.CastAllowed, WCSW.CastBlocked, {}
+WCSW.CastAllowed = function() return false end
+WCSW.CastBlocked = function(_, c) blockedCasts[#blockedCasts + 1] = c end
+FAKE.clicked, CASTS = {}, {}
+Click(main)
+check("out of range: nothing cast and no CastClicked", #CASTS == 0 and #FAKE.clicked == 0, #CASTS)
+check("out of range: CastBlocked once", #blockedCasts == 1, #blockedCasts)
+check("out of range: the button is set up again", attr(main, "type") == "spell")
+WCSW.CastAllowed, WCSW.CastBlocked = realAllowed, realBlocked
+FAKE.clicked, CASTS = {}, {}
+Click(main)
+check("in range again: it casts", #CASTS == 1 and #FAKE.clicked == 1)
 
 ---------------------------------------------------------------- ungrouped, +N more, empty
 P.window.grouped = false

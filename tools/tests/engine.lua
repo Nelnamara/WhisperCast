@@ -593,6 +593,74 @@ if not (C_Spell and C_Spell.IsSpellInRange) and not IsSpellInRange then
 end
 check("InRange(no unit) nil", WCSW:InRange({}) == nil)
 
+---------------------------------------------------------------- out of range: no casting it on me
+print("-- out of range press")
+clearAll()
+whisper("fort", "Dan")
+whisper("shield", "Eve")
+local dr = WCSW.queue[1]
+local nc = WCSW:NextCast()
+RANGE[dr.unit] = false
+check("CastAllowed false when the asker is out of range", WCSW:CastAllowed(nc) == false)
+RANGE[dr.unit] = true
+check("CastAllowed true in range", WCSW:CastAllowed(nc) == true)
+RANGE[dr.unit] = nil
+check("CastAllowed true when the game won't say", WCSW:CastAllowed(nc) == true)
+RANGE[dr.unit] = false
+FireEvent("PLAYER_REGEN_DISABLED")
+check("CastAllowed true in combat (the button can't stop a press there)", WCSW:CastAllowed(WCSW:NextCast()) == true)
+FireEvent("PLAYER_REGEN_ENABLED")
+RANGE[dr.unit] = nil
+local realErrors, redLines = UIErrorsFrame, {}
+UIErrorsFrame = { AddMessage = function(_, text) redLines[#redLines + 1] = text end }
+SENT = {}
+Advance(5)
+WCSW:CastBlocked(WCSW:NextCast())
+check("stopped press: a try, back in line", dr.fails == 1 and WCSW.queue[#WCSW.queue] == dr, dr.fails)
+check("stopped press: a red line", redLines[1] == "Dan is out of range for Power Word: Fortitude.", redLines[1])
+check("stopped press: nobody is whispered", #SENT == 0, #SENT)
+UIErrorsFrame = realErrors
+
+-- the game's auto self-cast put it on me (in combat, where the press can't be stopped): no "coming now",
+-- not answered, a try
+local myName = UnitName("player")
+local function pressSent(target)
+	local c = WCSW:NextCast()
+	NO_SENT = true
+	WCSW:CastClicked(c)
+	NO_SENT = false
+	FireEvent("UNIT_SPELLCAST_SENT", "player", target, "Cast-S", c.castID)
+	FireEvent("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-S", c.castID)
+	return c
+end
+clearAll()
+whisper("fort", "Dan")
+local dm = WCSW.queue[1]
+SENT = {}
+Advance(5)
+pressSent(myName)
+check("landed on me: no 'coming now'", #SENT == 0, #SENT)
+check("landed on me: still queued, a try", WCSW.queue[1] == dm and dm.fails == 1, dm.fails)
+SENT = {}
+Advance(5)
+pressSent("Dan")
+check("on the asker: 'coming now' and answered", #SENT == 1 and #WCSW.queue == 0, #WCSW.queue)
+clearAll()
+whisper("fort", "Dan")
+dm = WCSW.queue[1]
+FireEvent("PLAYER_REGEN_DISABLED")
+SENT = {}
+pressSent(myName)
+check("in combat, landed on me: not done, waits for after the fight", WCSW.queue[1] == dm and not dm.done and dm.fails == 1)
+FireEvent("PLAYER_REGEN_ENABLED")
+check("after that fight it is ready again", WCSW:NextCast() and WCSW:NextCast().reqs[1] == dm)
+clearAll()
+whisper("fort", "Tester")
+SENT = {}
+Advance(5)
+pressSent(myName)
+check("my own request on me is answered", #WCSW.queue == 0, #WCSW.queue)
+
 ---------------------------------------------------------------- secrets and odd input
 print("-- secrets")
 clearAll()

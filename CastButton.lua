@@ -77,9 +77,23 @@ function CB:NewSecure(name, parent)
 	b:RegisterForClicks("AnyUp", "AnyDown")
 	b:SetScript("PreClick", function(self, _, down)
 		if not Acts(down) or self:GetAttribute("type") ~= "spell" then return end
+		-- out of combat, an asker out of range: stop this press (the game would cast it on you instead);
+		-- PostClick counts the try, which sets the buttons up again
+		if CB.cast and not InCombatLockdown() and WCSW.CastAllowed and not WCSW:CastAllowed(CB.cast) then
+			self:SetAttribute("type", nil)
+			self.blocked = CB.cast
+			return
+		end
 		if CB.cast and WCSW.CastClicked then WCSW:CastClicked(CB.cast) end
 	end)
 	b:SetScript("PostClick", function(self)
+		if self.blocked then
+			local cast = self.blocked
+			self.blocked = nil
+			if WCSW.CastBlocked then WCSW:CastBlocked(cast) end
+			CB:Arm()   -- the type comes back even when nothing in the queue moved
+			return
+		end
 		-- the wrap cleared the armed cast: show it spent
 		if UI.Locked() and CB.cast and not self:GetAttribute("type") and not CB.spent then
 			CB.spent = true
