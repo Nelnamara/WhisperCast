@@ -42,10 +42,11 @@ else
 	SendChatMessage = capture
 end
 FILTERS = {}
-function ChatFrame_AddMessageEventFilter(event, fn)
+local function addTestFilter(event, fn)
 	FILTERS[event] = FILTERS[event] or {}
 	table.insert(FILTERS[event], fn)
 end
+ChatFrame_AddMessageEventFilter = addTestFilter
 
 -- the raid: index -> { name, realm, class, level, sub }
 ROSTER = {}
@@ -800,6 +801,15 @@ do
 	else
 		check("not Forever: \"Alice Nyx\" is not Alice (no surnames on this client)", queueKeys() == "", queueKeys())
 	end
+	-- a [WC] reply is never a request (two copies would whisper each other in a loop)
+	clearAll()
+	p.match = "any"
+	whisper("[WC] Mark of the Wild: you're 1st in line. kings freedom fort motw", "Alice")
+	check("a [WC] reply whisper is never queued, even with any-word matching", #WCSW.queue == 0 and #SENT == 0, queueKeys())
+	p.match = "start"
+	local fwh = FILTERS.CHAT_MSG_WHISPER and FILTERS.CHAT_MSG_WHISPER[1]
+	check("my own [WC] reply echoed back to me is hidden", fwh and fwh(DEFAULT_CHAT_FRAME, "CHAT_MSG_WHISPER", "[WC] x: you're 1st in line.", UnitName("player")) == true)
+	check("someone else's [WC] whisper is shown", fwh and fwh(DEFAULT_CHAT_FRAME, "CHAT_MSG_WHISPER", "[WC] x: you're 1st in line.", "Alice") == false)
 	-- "coming now" waits for the game to take the cast
 	clearAll()
 	whisper(word, "Alice")

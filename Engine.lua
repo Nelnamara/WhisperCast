@@ -754,8 +754,14 @@ function WCSW:ReplyList(name)
 	end
 end
 
+-- a [WC] reply whisper (ours or another copy's): never a request
+local function isReply(m)
+	return m and m:sub(1, #WCSW.REPLY_TAG):lower() == WCSW.REPLY_TAG:lower()
+end
+
 -- true when this whisper is a request (or "wc") we would act on; used by the chat filter too
 function WCSW:IsRequestWhisper(msg, sender)
+	if isReply(msg) then return false end
 	local text = normalize(msg)
 	if text == "wc" then return true end
 	if not self:MatchSpell(text) then return false end
@@ -771,6 +777,10 @@ function WCSW:OnWhisper(rawMsg, rawSender)
 	end
 	if not self.spells then self:Debug("whisper ignored: spell list not built yet"); return end
 	local sender = raw   -- replies go to the name exactly as chat gave it ("Name Surname" on Forever)
+	if isReply(msg) then
+		self:Debug("whisper from \"%s\" is a [WC] reply; ignored", raw)
+		return
+	end
 	local text = normalize(msg)
 	self:Debug("whisper from \"%s\": \"%s\"", raw, text)
 	if not sender then return end
@@ -988,17 +998,22 @@ end
 ---------------------------------------------------------------- chat filters
 local function filterInform(_, _, msg)
 	local p = WCSW.db and WCSW.db.profile
-	if not p or not p.hideOwnReplies then return false end
 	local m = plain(msg)
-	if m and m:sub(1, #WCSW.REPLY_TAG) == WCSW.REPLY_TAG then return true end
-	return false
+	local hide = (p and p.hideOwnReplies and isReply(m)) and true or false
+	if isReply(m) or not m then
+		WCSW:Debug("chat filter, my whisper: %s (%s)", hide and "hidden" or "shown", m and "text readable" or "text hidden by the game")
+	end
+	return hide
 end
 
 local function filterWhisper(_, _, msg, sender)
 	local p = WCSW.db and WCSW.db.profile
-	if not p or not p.hideRequests or not WCSW.spells then return false end
+	if not p or not WCSW.spells then return false end
 	local m, s = plain(msg), plain(sender)
 	if not m or not s then return false end
+	-- my own [WC] reply coming back when I whisper myself (testing)
+	if p.hideOwnReplies and isReply(m) and WCSW:FindUnit(s) == "player" then return true end
+	if not p.hideRequests then return false end
 	return WCSW:IsRequestWhisper(m, s) and true or false
 end
 Engine.filterInform, Engine.filterWhisper = filterInform, filterWhisper
@@ -1060,6 +1075,7 @@ function Engine:Init(wcsw)
 		local g = wcsw.db.global
 		g.debug = not g.debug
 		wcsw:Print(g.debug and L["Debug on: every whisper's steps print in chat. /wc debug again to stop."] or L["Debug off."])
+		if g.debug then wcsw:Debug("chat filters added with %s", tostring(wcsw.filterVia)) end
 	end, L["print every step of each whisper (on or off)"])
 	wcsw:AddSlash("test", function(rest)
 		local me = unitFullName("player") or (UnitName and UnitName("player"))
@@ -1115,12 +1131,19 @@ function Engine:Enable(wcsw)
 			changed()
 		end
 	end)
-	local addFilter = ChatFrame_AddMessageEventFilter or (ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter)
+	-- the long-standing global first (proven in game on Forever, 20 Nov 2026); ChatFrameUtil where it's gone
+	local addFilter, via = nil, "none"
+	if ChatFrame_AddMessageEventFilter then
+		addFilter, via = ChatFrame_AddMessageEventFilter, "ChatFrame_AddMessageEventFilter"
+	elseif ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter then
+		addFilter, via = ChatFrameUtil.AddMessageEventFilter, "ChatFrameUtil.AddMessageEventFilter"
+	end
 	if addFilter and not self.filtersAdded then
 		self.filtersAdded = true
 		addFilter("CHAT_MSG_WHISPER_INFORM", filterInform)
 		addFilter("CHAT_MSG_WHISPER", filterWhisper)
 	end
+	wcsw.filterVia = via
 end
 
 function Engine:Refresh(wcsw)
