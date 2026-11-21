@@ -1,0 +1,20 @@
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# WoW saved variables / local overrides
+*.lua.bak
+
+# tools/spell-list-check: npm install and downloaded wago.tools tables
+tools/spell-list-check/node_modules/
+tools/spell-list-check/cache/
+tools/flight-data/cache/
+
+# tools/package-test.py output
+dist/

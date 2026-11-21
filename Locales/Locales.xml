@@ -1,0 +1,7 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<!-- English first (the default); each build lane keeps its own English file. Other languages after. -->
+	<Script file="enUS_Core.lua"/>
+	<Script file="enUS_Engine.lua"/>
+	<Script file="enUS_UI.lua"/>
+	<Script file="enUS_Options.lua"/>
+</Ui>

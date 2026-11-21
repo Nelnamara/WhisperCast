@@ -1,0 +1,27 @@
+## Interface: 50504
+## Title: |cFFFF80FFWhisperCast|r: Second Wind
+## Notes: Group members whisper you for a buff or a cure; it joins a queue, and one key casts it on them. A rewrite of WhisperCast (Valconeye, 2007).
+## IconTexture: Interface\Icons\Spell_Holy_WordFortitude
+## Author: Nelnamara
+## Version: 1.0.0
+## SavedVariables: WhisperCastSWDB
+## OptionalDeps: Masque
+## X-License: All Rights Reserved
+
+embeds.xml
+Libs\LibEditMode\embed.xml
+Locales\Locales.xml
+
+Core.lua
+Data.lua
+Engine.lua
+API.lua
+Looks.lua
+CastButton.lua
+Window.lua
+Toast.lua
+Folded.lua
+Minimap.lua
+EditMode.lua
+Chips.lua
+Options.lua

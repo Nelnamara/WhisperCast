@@ -1,0 +1,13 @@
+package-as: WhisperCastSecondWind
+
+ignore:
+  - .pkgmeta
+  - .gitignore
+  - README.md
+  - docs
+  - tools
+  - CLAUDE.md
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
