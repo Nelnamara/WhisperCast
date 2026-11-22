@@ -11,7 +11,7 @@ key casts it. Standalone; CooldownCollaborator shows its queue on an Asks tab (C
   `D.priority` for shared words) · Engine (queue, matching, replies, chat filters, ranks, combat arming) · API ·
   Looks · CastButton (secure `WhisperCastSWCastButton`, set out of combat only; a SecureHandlerWrapScript lets the
   armed request cast once in combat) · Window · Toast (note + sounds) · Folded · Minimap · EditMode · Chips
-  (AceGUI `WCSW_Chips`) · Options.
+  (AceGUI `WCSW_Chips`) · Options · Welcome (the welcome window, its demo, the tour and checklist).
 - Tests: `bash tools/tests/runall.sh` (smoke, engine, ui, options on all six TOCs; fengari from cdtl3-dev).
   LuaLS: `cd ../cdtl3-dev && LUALS=/opt/homebrew/bin/lua-language-server WOW_API_ANNOTATIONS=$HOME/.local/wow-api-annotations python3 tools/luals-check/run.py ../WhisperCast` — keep 0 warnings.
 - Deploy to Forever: rsync to `/Applications/World of Warcraft/_forever_/Interface/AddOns/WhisperCast`
