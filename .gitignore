@@ -18,3 +18,6 @@ tools/flight-data/cache/
 
 # tools/package-test.py output
 dist/
+
+# tools/icon-board: the built page embeds the art (2 MB); make it with board.py
+tools/icon-board/index.html
