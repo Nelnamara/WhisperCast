@@ -46,3 +46,16 @@ His notes in quotes.
 - Folded away: Round icon: "In/Out of combat settings and more custom options for icon. (Masque support?)"
 - Trigger words: Word chips.
 - CDC: Asks tab on CDC's panel: "The whispers as well." (CDC's Ask also whispers the right trigger word.)
+
+## Welcome picks (21 Nov, WhisperCast Welcome Board https://claude.ai/artifact/RavknhWQ4TZHduqzMF3Tv1)
+
+His ask: "lets add a welcome/whats new screen to whispercast telling users/old users what it is and the history
+of the addon. add a sample animation of the main window in action and such to show people what to do and a 3
+step tour to setup." Drawings in `tools/welcome-board/index.html`; picks in the board's db collection `picks`.
+- The welcome window: **Three tabs** (Welcome, The story, What's new).
+- The demo: **The loop, with steps** (the three step labels light up in turn under it).
+- The tour: **On the real frames**: "With the checklist at the end back at the welcome window".
+- When it shows: **First install and each update**.
+- Where it came from: none of the drafts: "I will write my own based loosely on the long story". The long
+  draft stands in until his text arrives.
+- New since 2007: **The list** as drawn.

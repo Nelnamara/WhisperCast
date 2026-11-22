@@ -122,3 +122,49 @@ glow) · Folded icon · Profiles (AceDBOptions).
 - **The whispers as well**: CDC's Ask already whispers "<Spell> on me please"; Second Wind matches the spell's own
   name, so it queues with no change on CDC's side. CDC may use `WhisperCastSW:TriggerFor(spellID)` when it wants
   the shortest word.
+
+## The welcome window, the demo and the tour (21 Nov; picks in SCOPE.md, drawings in tools/welcome-board)
+Welcome.lua and Locales/enUS_Welcome.lua. Every client.
+- **The window** `WhisperCastSWWelcome`: 440 x 430, DIALOG strata, centred, dragged by its title, Esc closes it.
+  Fill, edge, title colour and accent from the Overall look, as the queue window. Title "WhisperCast: Second Wind"
+  then the version in note grey; a close x. Under the title three text tabs, **Welcome · The story · What's
+  new** (12 px; the chosen one in the accent colour with a 2 px accent line under it, the others note grey).
+  Along the bottom: **Take the tour** (left) and **Close** (right), game buttons.
+- **Welcome tab**: the demo (below), then "What it is": `Your group whispers you a word like "motw"; the spell
+  queues on them and one key casts it.` After the tour has run once, the checklist sits under it.
+- **The demo** (the loop, with steps): a 408 x 150 panel (black at 35%) drawn from the addon's own pieces in the
+  current look: three chat lines (top left), a small queue window (title, pink count badge, Next up spotlight,
+  glowing edge), the note ("Thornwick asks for Mark of the Wild", accent edge on the left) and the Cast button
+  (32 px, the bound key top-right, "F" when none is bound). Under the panel three step labels, **1 They whisper ·
+  2 It queues · 3 You press <key>**; the current one in the accent colour, the others note grey. One 8 s loop:
+  0.8 s the whisper line shows (step 1); 2.0 s the request queues: spotlight, badge, glow, the note and the
+  button's icon and glow (step 2); 4.6 s the button is pressed (step 3); 5.0 s the reply line "To [Thornwick]:
+  [WC] Mark of the Wild coming now." shows and the note fades; 5.6 s the window empties ("No requests"); 7.4 s
+  the chat lines fade; again. It runs only while the Welcome tab is showing (OnUpdate on the panel, as CDTL3's
+  samples). The asker and spell are the same on every client (a sample, not the player's spells).
+- **The story tab**: "Where it came from" (accent, 13 px) and the owner's history text, scrolling (12 px).
+- **What's new tab**: "New since 2007" with the version, then one line each with an accent dot. The 1.0.0 lines
+  are the board's eight; on Mists and Retail (no group buffs) the second line drops "one group buff when two in a
+  party ask". A later version adds its own block above.
+- **The tour** (on the real frames): a note `WhisperCastSWTour`, 300 wide, in the window's look: "<n> of 3 ·
+  <title>" in the accent, the text, three dots, its buttons, a skip x. An accent edge with a soft glow
+  (`WhisperCastSWTourMark`) rings the frame the step is about; the note sits beside it, kept on screen.
+  1. **Your queue window** (the window, shown for the tour): "Requests line up here, next one first. Drag it by
+     its title where you like." Frames are unlocked for this step and locked again after it (unless they were
+     already unlocked). Next.
+  2. **Your Cast key** (the Cast button; the window when the button is hidden): "This button casts the next
+     request. Give it a key you can reach in a fight." and "Your key: F" or "No key yet." **Set the key** waits
+     for the next key press (with Shift, Ctrl, Alt; Esc cancels), binds it to "Cast the next request" in place
+     of any older key and says in chat what that key did before. Out of combat only. Next.
+  3. **Tell your group** (the chat box): "Your group whispers you a word and the spell queues on them. Tell them
+     the words, or try one on yourself first." **Announce** (`/wc announce`), **Try it** (`/wc test` with the
+     first word of the first spell this character knows; nothing is sent), **Done**.
+  Done opens the welcome window on Welcome with the checklist. The x ends the tour too (the checklist waits in
+  the window). Not in combat: "/wc tour" in a fight says it starts after the fight.
+- **The checklist** (Welcome tab, after the tour): "Set up in three steps"; three lines that tick themselves:
+  Place your queue window (**Unlock** / **Lock**; ticked once it has been moved or locked after the tour's
+  step 1), Bind your Cast key (**Set the key**; ticked while a key is bound, the key shown), Tell your group
+  (**Announce**; ticked once an announce went out). Then "Or Try it to see a request arrive." with **Try it**.
+- **When it shows**: a first install (no saved settings yet) opens the window on Welcome, and closing it starts
+  the tour. After an update (the version differs from the last one shown, or none was recorded) it opens once
+  on What's new. Both wait 2 s after login and until a fight ends. `/wc welcome` and `/wc tour` any time.
