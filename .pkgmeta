@@ -3,6 +3,7 @@ package-as: WhisperCast
 ignore:
   - .pkgmeta
   - .gitignore
+  - .github
   - README.md
   - docs
   - tools
