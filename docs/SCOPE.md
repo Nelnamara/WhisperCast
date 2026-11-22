@@ -59,3 +59,11 @@ step tour to setup." Drawings in `tools/welcome-board/index.html`; picks in the 
 - Where it came from: none of the drafts: "I will write my own based loosely on the long story". His text
   arrived 21 Nov and is in Locales/enUS_Welcome.lua (WELCOME_STORY) word for word, two typos corrected and Mists added to the clients (his yes).
 - New since 2007: **The list** as drawn.
+
+## Icon picks (21 Nov, WhisperCast Icon Board https://claude.ai/artifact/WEHtm7j2CurPc5LTFst5Mf)
+
+From his own picture ("I already created some mascot images like I do for the others"), cut four ways
+(tools/icon-board); picks in the board's db collection `picks`.
+- The AddOns list: **The whisper** (both of them, the hand at her mouth).
+- The minimap button: **The whisperer** (her face, round, gold ring).
+- The empty Cast button and the folded icon: **The sigil** (the spell in her hand).

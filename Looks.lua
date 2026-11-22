@@ -18,9 +18,12 @@ local L = WCSW.L
 local UI = {}
 WCSW.UI = UI
 
-WCSW.LOGO = WCSW.LOGO or "Interface\\Icons\\Spell_Holy_WordFortitude"   -- the addon list icon (Identity)
 WCSW.UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 UI.MEDIA = "Interface\\AddOns\\" .. (WCSW.ADDON_NAME or "WhisperCast") .. "\\Media\\"
+-- The owner's Second Wind picture, cut three ways (his picks, 21 Nov; tools/icon-board):
+WCSW.LOGO = WCSW.LOGO or (UI.MEDIA .. "logo")         -- the sigil: empty Cast button, folded icon, note, empty window
+WCSW.ICON = WCSW.ICON or (UI.MEDIA .. "icon")         -- the whisper: the AddOns list (TOC) and the launcher
+WCSW.MINIMAP_ICON = UI.MEDIA .. "minimap"             -- the whisperer, round with the gold ring baked in
 UI.WHITE = "Interface\\Buttons\\WHITE8X8"
 
 local function hex(h, a)

@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: |cFFFF80FFWhisperCast|r: Second Wind
 ## Notes: Group members whisper you for a buff or a cure; it joins a queue, and one key casts it on them. A rewrite of WhisperCast (Valconeye, 2007).
-## IconTexture: Interface\Icons\Spell_Holy_WordFortitude
+## IconTexture: Interface\AddOns\WhisperCast\Media\icon.tga
 ## Author: Nelnamara
 ## Version: 1.0.0
 ## SavedVariables: WhisperCastSWDB

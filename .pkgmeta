@@ -7,6 +7,10 @@ ignore:
   - docs
   - tools
   - CLAUDE.md
+  - Media/icon.png
+  - Media/minimap.png
+  - Media/logo.png
+  - Media/whispercast-art.jpg
 
 manual-changelog:
   filename: CHANGELOG.md

@@ -43,27 +43,16 @@ M.Click = Click
 local function Build()
 	btn = CreateFrame("Button", "WhisperCastSWMinimapButton", Minimap)
 	M.button = btn
-	btn:SetSize(31, 31)
+	btn:SetSize(24, 24)   -- as CooldownCollaborator's and CDTL3's
 	btn:SetFrameStrata("MEDIUM")
 	btn:SetFrameLevel(8)
 	btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	btn:RegisterForDrag("LeftButton")
-	btn:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
-	-- the game's own minimap button art round the logo
-	local bg = btn:CreateTexture(nil, "BACKGROUND")
-	bg:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
-	bg:SetSize(20, 20)
-	bg:SetPoint("TOPLEFT", btn, "TOPLEFT", 7, -5)
+	-- a round picture with its gold ring baked in, as the owner's other addons draw theirs
 	local icon = btn:CreateTexture(nil, "ARTWORK")
-	icon:SetTexture(WCSW.LOGO)
-	icon:SetSize(17, 17)
-	icon:SetPoint("TOPLEFT", btn, "TOPLEFT", 7, -6)
-	icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
+	icon:SetAllPoints(btn)
+	icon:SetTexture(WCSW.MINIMAP_ICON)
 	btn.icon = icon
-	local border = btn:CreateTexture(nil, "OVERLAY")
-	border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-	border:SetSize(53, 53)
-	border:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
 
 	btn:SetScript("OnClick", function(_, mouse) Click(mouse) end)
 	btn:SetScript("OnEnter", function(self)
@@ -105,7 +94,7 @@ function M:Enable()
 		self.launcher = LDB:NewDataObject(WCSW.TITLE, {
 			type = "launcher",
 			label = WCSW.TITLE,
-			icon = WCSW.LOGO,
+			icon = WCSW.ICON,
 			OnClick = function(_, mouse) Click(mouse) end,
 			OnTooltipShow = function(tt) Tooltip(tt) end,
 		})

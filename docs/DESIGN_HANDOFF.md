@@ -10,7 +10,11 @@ for the owner, not a builder's call.
   `WhisperCast` (the owner, 21 Nov: the folder is just WhisperCast; it was `WhisperCastSecondWind`). AceAddon and global object `WhisperCastSW`; saved variables `WhisperCastSWDB`.
 - Slash `/wc` and `/whispercast`. Reply prefix `[WC]`. Addon message prefix `WCSW`.
 - Accent: whisper pink `#ff80ff` (1, 0.5, 1). Everything pink below means the accent colour setting.
-- Addon list icon: a game icon (`Interface\Icons\Spell_Holy_WordFortitude`) until the owner picks art.
+- Icons: the owner's Second Wind picture (`Media/whispercast-art.jpg`), cut by `tools/icon-board/make.py` into
+  `Media/icon.tga` (the whisper: AddOns list and the launcher), `Media/minimap.tga` (the whisperer, round with the
+  gold ring baked in; the minimap button is 24 px with no game frame, as CooldownCollaborator's and CDTL3's) and
+  `Media/logo.tga` (the sigil: empty Cast button, folded icon, note, empty window, welcome demo). 64 px TGAs in
+  CooldownCollaborator's format; the 128 px PNGs are the source art and stay out of the package.
 
 ## The queue window
 Default 260 px wide, scale 1.0, movable when unlocked and in Edit Mode, position saved per Edit Mode layout.
