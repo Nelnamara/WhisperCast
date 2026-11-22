@@ -57,5 +57,5 @@ step tour to setup." Drawings in `tools/welcome-board/index.html`; picks in the 
 - The tour: **On the real frames**: "With the checklist at the end back at the welcome window".
 - When it shows: **First install and each update**.
 - Where it came from: none of the drafts: "I will write my own based loosely on the long story". His text
-  arrived 21 Nov and is in Locales/enUS_Welcome.lua (WELCOME_STORY) word for word, two typos corrected.
+  arrived 21 Nov and is in Locales/enUS_Welcome.lua (WELCOME_STORY) word for word, two typos corrected and Mists added to the clients (his yes).
 - New since 2007: **The list** as drawn.
