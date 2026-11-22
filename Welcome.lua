@@ -568,6 +568,7 @@ local function Build()
 	story.text:SetSpacing(3)
 	story.text:SetText(L["WELCOME_STORY"])
 	setColor(story.text, C.spell)
+	story.scroll.child:SetHeight(math.max(10, (story.text:GetStringHeight() or 0) + 8))   -- the wheel scrolls past the box
 	win.pages.story = story
 
 	local news = CreateFrame("Frame", nil, win)
