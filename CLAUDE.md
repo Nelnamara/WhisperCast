@@ -16,4 +16,4 @@ key casts it. Standalone; CooldownCollaborator shows its queue on an Asks tab (C
   LuaLS: `cd ../cdtl3-dev && LUALS=/opt/homebrew/bin/lua-language-server WOW_API_ANNOTATIONS=$HOME/.local/wow-api-annotations python3 tools/luals-check/run.py ../WhisperCast` — keep 0 warnings.
 - Deploy to Forever: rsync to `/Applications/World of Warcraft/_forever_/Interface/AddOns/WhisperCast`
   excluding .git, docs, tools, CLAUDE.md, README.md, .pkgmeta, .gitignore.
-- Commits as Nelnamara <gwilkins@local>, no Co-Authored-By trailer. GitHub: https://github.com/Nelnamara/WhisperCast (private, `main`, HTTPS remote; created 21 Nov at the owner's ask).
+- Commits as Nelnamara <gwilkins@local>, no Co-Authored-By trailer. GitHub: https://github.com/Nelnamara/WhisperCast (public, as all his addons are; `main`, HTTPS remote; created 21 Nov at the owner's ask).
