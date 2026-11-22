@@ -761,6 +761,101 @@ else
 	print("  (the real Engine isn't there yet: fake queue only)")
 end
 
+---------------------------------------------------------------- the welcome window, the demo and the tour
+do
+	local WL = WCSW.Welcome
+	check("welcome: module there", WL ~= nil)
+	if WL then
+		local e0 = #ERRORS
+		local G = WCSW.db.global
+		check("welcome: a first install is due the welcome", WL.DueAtLogin() == "welcome")
+		check("welcome: a first install has the tour pending", G.tourPending == true)
+		local s = WL.DemoAt(1.5)
+		check("demo: they whisper at 1.5 s", s.step == 1 and not s.queued and s.whisper == 1 and s.reply == 0)
+		s = WL.DemoAt(3)
+		check("demo: it queues at 3 s", s.step == 2 and s.queued and s.note == 1)
+		s = WL.DemoAt(4.7)
+		check("demo: you press at 4.7 s", s.step == 3 and s.pressed and s.queued)
+		s = WL.DemoAt(6)
+		check("demo: emptied, the reply showing at 6 s", not s.queued and s.reply == 1 and s.note == 0 and s.step == 3)
+		s = WL.DemoAt(8.2)
+		check("demo: loops after 8 s", s.step == 0 and s.whisper == 0 and not s.queued)
+
+		WCSW.freshInstall = false
+		G.lastSeen = "0.9.0"
+		check("welcome: an update is due What's new", WL.DueAtLogin() == "news")
+		WCSW.slash.welcome("")
+		local win = _G.WhisperCastSWWelcome
+		check("welcome: /wc welcome opens it", win ~= nil and win:IsShown())
+		check("welcome: opening records the version", G.lastSeen == WCSW.version and WL.DueAtLogin() == nil)
+		check("welcome: Esc closes it", (function() for _, n in ipairs(UISpecialFrames) do if n == "WhisperCastSWWelcome" then return true end end end)())
+		check("welcome: opens on Welcome", win.pages.welcome:IsShown() and not win.pages.news:IsShown() and not win.pages.story:IsShown())
+		check("welcome: no checklist before the tour", not win.checklist:IsShown())
+		win.demo.t = 0
+		win.demo.__scripts.OnUpdate(win.demo, 3)
+		check("demo: drawn queued", win.demo.q.badge:IsShown() and win.demo.q.name:IsShown() and not win.demo.q.empty:IsShown())
+		check("demo: step 2 label", win.demo.steps[2]:GetText() == "2  It queues", win.demo.steps[2]:GetText())
+		check("demo: step 3 names the key", win.demo.steps[3]:GetText() == "3  You press " .. (WCSW:CastKey() or "F"), win.demo.steps[3]:GetText())
+		WL:Select("news")
+		check("welcome: What's new tab", win.pages.news:IsShown() and not win.pages.welcome:IsShown())
+		check("welcome: eight lines new since 2007", #win.pages.news.lines == 8, #win.pages.news.lines)
+		local groups = (win.pages.news.lines[2]:GetText() or ""):find("group buff") ~= nil
+		check("welcome: group buff line only where group buffs exist", groups == (WCSW.isEra or WCSW.isTBC or WCSW.isForever or false))
+		WL:Select("story")
+		check("welcome: the story tab", win.pages.story:IsShown() and (win.pages.story.text:GetText() or ""):find("Valconeye") ~= nil)
+
+		-- the tour
+		local bindings = {}
+		function SetBinding(key, cmd) if cmd then BINDKEY = key; bindings[key] = cmd elseif key == BINDKEY then BINDKEY = nil end end
+		function SaveBindings() bindings.saved = true end
+		function GetBindingAction(key) if key == "SHIFT-G" then return "MOVEFORWARD" end return "" end
+		WCSW:SetFramesUnlocked(false)
+		check("tour: starts", WL:StartTour(true) == true and WL.touring)
+		check("tour: the welcome window steps aside", not win:IsShown())
+		local note = _G.WhisperCastSWTour
+		check("tour: step 1 on the window", note:IsShown() and WL.step == 1 and _G.WhisperCastSWTourMark:IsShown())
+		check("tour: frames unlocked for step 1", WCSW.db.profile.unlocked == true)
+		note.next.__scripts.OnClick(note.next)
+		check("tour: step 2", WL.step == 2 and note.setKey:IsShown())
+		check("tour: locked again after step 1", WCSW.db.profile.unlocked == false)
+		check("tour: placed", WL.Ticks()[1] == true)
+		function IsShiftKeyDown() return true end
+		check("key: Shift+G", WL.KeyFromPress("G") == "SHIFT-G")
+		check("key: a lone modifier waits", WL.KeyFromPress("LSHIFT") == nil)
+		function IsShiftKeyDown() return false end
+		LOCKDOWN = true
+		check("key: not in a fight", WL.BindKey("SHIFT-G") == false and BINDKEY ~= "SHIFT-G")
+		LOCKDOWN = false
+		check("key: bound", WL.BindKey("SHIFT-G") == true and BINDKEY == "SHIFT-G" and bindings.saved)
+		check("tour: shows the key", note.key:IsShown() and (note.key:GetText() or ""):find("SHIFT%-G") ~= nil, note.key:GetText())
+		note.next.__scripts.OnClick(note.next)
+		check("tour: step 3 with Announce, Try it, Done", WL.step == 3 and note.done:IsShown() and note.try:IsShown() and note.announce:IsShown() and not note.next:IsShown())
+		WL.TryIt()
+		note.done.__scripts.OnClick(note.done)
+		check("tour: done", not WL.touring and not note:IsShown() and G.tourDone == true and G.tourPending == nil)
+		check("tour: back at the welcome window", win:IsShown() and win.pages.welcome:IsShown() and win.checklist:IsShown())
+		local t = WL.Ticks()
+		check("checklist: placed and key ticked, not told yet", t[1] and t[2] and not t[3])
+		WCSW:Fire("Announced")
+		check("checklist: an announce ticks the third", WL.Ticks()[3] == true)
+
+		-- a first install: closing the welcome window starts the tour
+		G.tourPending = true
+		win:Hide()
+		win.__scripts.OnHide(win)
+		check("tour: follows a first install's welcome", WL.touring == true)
+		WL:EndTour(false)
+		check("tour: the x ends it quietly", not WL.touring and not win:IsShown())
+		LOCKDOWN = true
+		check("tour: waits for the fight to end", WL:StartTour(true) == false)
+		LOCKDOWN = false
+		FireEvent("PLAYER_REGEN_ENABLED")
+		check("tour: starts after the fight", WL.touring == true)
+		WL:EndTour(false)
+		check("welcome: drew clean", #ERRORS == e0, #ERRORS - e0 .. " errors")
+	end
+end
+
 for _, e in ipairs(ERRORS) do print("  FAIL lua error: " .. tostring(e):sub(1, 400)) end
 print(string.format("  %d checks passed, %d failed", PASSES, FAILS))
 print(string.format("RESULT %s ui: total lua errors %d", HARNESS_TOCFILE, #ERRORS + FAILS))

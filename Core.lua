@@ -17,6 +17,7 @@
 	  "ArmedChanged"      (req or nil)  the request on the Cast button changed
 	  "LookChanged"       ()            look, colours, scale or font changed
 	  "LockChanged"       (unlocked)
+	  "Announced"         ()            /wc announce went out to party or raid (the welcome checklist)
 
 	A request (owned by Engine.lua; read-only for everyone else):
 	  { id, name ("Name" or "Name-Realm" as whispered), short ("Name"), class ("PRIEST"), unit ("raid3"),
@@ -140,6 +141,10 @@ WCSW.defaults = {
 	},
 	global = {
 		debug = false,           -- /wc debug: print every step of each whisper
+		lastSeen = nil,          -- the version the welcome window last opened for (Welcome.lua)
+		tourPending = nil,       -- a first install: the tour starts when the welcome window closes
+		tourDone = nil,          -- the tour has run once: the welcome checklist shows
+		setup = {},              -- the checklist's own ticks: placed, told
 	},
 }
 
@@ -225,6 +230,9 @@ end
 
 ---------------------------------------------------------------- lifecycle
 function WCSW:OnInitialize()
+	-- saved variables are loaded before OnInitialize; none at all means a first install (the welcome and the tour)
+	---@diagnostic disable-next-line: undefined-global
+	self.freshInstall = (WhisperCastSWDB == nil)
 	self.db = LibStub("AceDB-3.0"):New("WhisperCastSWDB", self.defaults, true)
 	self.db.RegisterCallback(self, "OnProfileChanged", "RefreshAll")
 	self.db.RegisterCallback(self, "OnProfileCopied", "RefreshAll")

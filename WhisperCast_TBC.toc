@@ -25,3 +25,4 @@ Minimap.lua
 EditMode.lua
 Chips.lua
 Options.lua
+Welcome.lua

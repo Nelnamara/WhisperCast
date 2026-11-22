@@ -4,4 +4,5 @@
 	<Script file="enUS_Engine.lua"/>
 	<Script file="enUS_UI.lua"/>
 	<Script file="enUS_Options.lua"/>
+	<Script file="enUS_Welcome.lua"/>
 </Ui>

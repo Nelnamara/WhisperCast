@@ -1180,6 +1180,8 @@ function WCSW:Announce()
 	if #words == 0 then self:Print(L["No spells to offer on this character."]); return end
 	local text = fitLine(L["Whisper me for buffs: %s. Whisper \"wc\" for the list."], words, 1)
 	sendChat(text, channel)
+	self:Fire("Announced")
+	return true
 end
 
 function WCSW:PrintStatus()
