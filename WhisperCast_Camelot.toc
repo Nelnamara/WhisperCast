@@ -6,6 +6,9 @@
 ## Version: 1.0.0
 ## SavedVariables: WhisperCastSWDB
 ## OptionalDeps: Masque
+## X-Curse-Project-ID: 1824287
+## X-Wago-ID: qKQgb1Nx
+## X-Website: https://github.com/Nelnamara/WhisperCast
 ## X-License: All Rights Reserved
 
 embeds.xml
