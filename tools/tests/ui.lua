@@ -802,7 +802,7 @@ do
 		local groups = (win.pages.news.lines[2]:GetText() or ""):find("group buff") ~= nil
 		check("welcome: group buff line only where group buffs exist", groups == (WCSW.isEra or WCSW.isTBC or WCSW.isForever or false))
 		WL:Select("story")
-		check("welcome: the story tab", win.pages.story:IsShown() and (win.pages.story.text:GetText() or ""):find("Valconeye") ~= nil)
+		check("welcome: the story tab", win.pages.story:IsShown() and (win.pages.story.text:GetText() or ""):find("Nelnamara") ~= nil)
 
 		-- the tour
 		local bindings = {}

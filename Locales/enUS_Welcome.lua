@@ -22,8 +22,8 @@ L["They whisper"] = true
 L["It queues"] = true
 L["You press %s"] = true
 
--- the story: the owner writes his own; the long draft from the welcome board stands in until it arrives
-L["WELCOME_STORY"] = "Valconeye released WhisperCast on WoWInterface in 2007. It did one thing well: a groupmate whispered \"fort\" or \"motw\", the request lined up, and one key cast it with the right rank. Raiding guilds lived by it.\n\nVersion 3.2.3 was the last, and it has sat in WoWInterface's discontinued section since; an addon that old won't even show in today's AddOns list. Second Wind is a fresh rewrite: none of the old code, all of the old idea, the same trigger words and /wc, now on Classic Era, TBC, Mists, Retail and Forever."
+-- the story: the owner's own words (21 Nov); only the doubled "of the" and "player's" corrected
+L["WELCOME_STORY"] = "WhisperCast was a crucial addon for Vanilla raiders, made by Valconeye in 2005. Druids and Paladins specifically made great use of this addon, needing to buff a 40 man raid was a time consuming and often inefficient process. WhisperCast helped put ownership in a player's needed raid buffs also on the player. Arriving late, after a partial wipe, simply whispering paw to a Druid would autocast Mark of the Wild. With Wow v2.0.0 TBC, brought new limitations on auto casting and in 2007 the addon became unmaintained.\n\nSecond Wind is a fresh rewrite: none of the old code, all of the old idea, the same trigger words and /wc now on Classic era, TBC, Retail and Forever. I made this in an effort to help bring some of that helpful utility to an overwhelming process for a learning player. I hope this Forever is as fun a ride for us Vanilla gave us.\n\n~Nelnamara"
 
 -- What's new
 L["New since 2007"] = true

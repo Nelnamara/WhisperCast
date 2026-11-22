@@ -56,6 +56,6 @@ step tour to setup." Drawings in `tools/welcome-board/index.html`; picks in the 
 - The demo: **The loop, with steps** (the three step labels light up in turn under it).
 - The tour: **On the real frames**: "With the checklist at the end back at the welcome window".
 - When it shows: **First install and each update**.
-- Where it came from: none of the drafts: "I will write my own based loosely on the long story". The long
-  draft stands in until his text arrives.
+- Where it came from: none of the drafts: "I will write my own based loosely on the long story". His text
+  arrived 21 Nov and is in Locales/enUS_Welcome.lua (WELCOME_STORY) word for word, two typos corrected.
 - New since 2007: **The list** as drawn.

@@ -843,6 +843,7 @@ check("CDC's 'Innervate on me please' queues Innervate", queueKeys() == "Eve:inn
 check("reply names Innervate", lastSent() == "[WC] Innervate: you're 1st in line.", lastSent())
 whisper("motw", "Alice")
 check("'motw' -> Mark of the Wild", WCSW.queue[2] and WCSW.queue[2].spell == "mark")
+check("'paw' -> Mark of the Wild (a default word since 21 Nov)", WCSW:MatchSpell("paw") == "mark")
 if WCSW.spells.abolishPoison then
 	check("druid with Abolish Poison: 'poison' -> Abolish Poison", WCSW:MatchSpell("poison") == "abolishPoison")
 	knowClass("DRUID", { [2893] = true })

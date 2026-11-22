@@ -153,7 +153,7 @@ D.words = {
 	},
 	DRUID = {
 		mark = {
-			enUS = { "motw", "mark" },
+			enUS = { "motw", "mark", "paw" },   -- "paw": the owner, 21 Nov (the old koKR and zhCN words mean paw too)
 			deDE = { "mal", "mdw" },
 			frFR = { "marque" },
 			koKR = { "야징", "발바닥" },
